@@ -1,0 +1,19 @@
+# Environment files
+.env
+backend/.env
+frontend/.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Node
+node_modules/
+frontend/node_modules/
+
+# Mac
+.DS_Store
+
+# Logs
+*.log
