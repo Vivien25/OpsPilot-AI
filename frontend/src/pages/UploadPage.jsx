@@ -1,8 +1,18 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import "./UploadPage.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
+
+const navItems = ["Dashboard", "Incidents", "AI Analysis", "Historical Cases", "Settings"];
+const actionSteps = ["Review detected issue", "Compare historical cases", "Assign operator remediation"];
+const initialTimeline = ["Awaiting image", "AI analysis pending", "Memory lookup pending"];
+const completeTimeline = [
+  "Vision agent analyzed image",
+  "Risk classifier detected severity",
+  "Retrieval agent searched memory",
+  "Recommendation agent generated next action",
+];
 
 function severityClass(severity) {
   if (severity === "high") return "severity high";
@@ -18,9 +28,18 @@ function cleanText(text) {
 
 function extractRootCause(text) {
   if (!text) return "Potential operational process gap or incomplete staging workflow.";
+
   const cleaned = cleanText(text);
   const match = cleaned.match(/possible root cause[:\s]*([\s\S]*?)(recommended next action|next action|$)/i);
   return match ? match[1].trim() : "Potential operational process gap or incomplete staging workflow.";
+}
+
+function formatBytes(bytes) {
+  if (!bytes) return "0 KB";
+  const units = ["B", "KB", "MB", "GB"];
+  const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  const value = bytes / 1024 ** index;
+  return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
 }
 
 export default function UploadPage() {
@@ -29,16 +48,54 @@ export default function UploadPage() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [health, setHealth] = useState("checking");
 
-  const handleFileChange = (e) => {
-    const selected = e.target.files?.[0];
-    setFile(selected);
+  useEffect(() => {
+    let isMounted = true;
+
+    axios
+      .get(`${API_BASE}/health/`, { timeout: 3000 })
+      .then(() => {
+        if (isMounted) setHealth("online");
+      })
+      .catch(() => {
+        if (isMounted) setHealth("offline");
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
+
+  const historicalMatches = result?.similar_incidents?.length || 0;
+  const timeline = result ? completeTimeline : initialTimeline;
+  const confidenceLabel = result ? "Model review complete" : "Pending";
+  const healthLabel = {
+    checking: "Checking backend",
+    online: "Backend online",
+    offline: "Backend offline",
+  }[health];
+
+  const uploadMeta = useMemo(() => {
+    if (!file) return "PNG, JPG, or JPEG";
+    return `${file.type || "image"} · ${formatBytes(file.size)}`;
+  }, [file]);
+
+  const handleFileChange = (event) => {
+    const selected = event.target.files?.[0];
+
+    if (preview) URL.revokeObjectURL(preview);
+
+    setFile(selected || null);
     setResult(null);
     setError("");
-
-    if (selected) {
-      setPreview(URL.createObjectURL(selected));
-    }
+    setPreview(selected ? URL.createObjectURL(selected) : "");
   };
 
   const handleUpload = async () => {
@@ -59,219 +116,232 @@ export default function UploadPage() {
       });
 
       setResult(response.data);
+      setHealth("online");
     } catch (err) {
       console.error(err);
-      setError("Analysis failed. Please make sure the backend is running.");
+      setHealth("offline");
+      setError("Analysis failed. Confirm the backend, Gemini key, and MongoDB connection are available.");
     } finally {
       setLoading(false);
     }
   };
 
-  const historicalMatches = result?.similar_incidents?.length || 0;
-
   return (
     <div className="layout">
-      <aside className="sidebar">
-        <div className="logo">OP</div>
+      <aside className="sidebar" aria-label="Primary">
+        <div className="brand">
+          <div className="logo">OP</div>
+          <div>
+            <strong>OpsPilot AI</strong>
+            <span>Incident console</span>
+          </div>
+        </div>
+
         <nav>
-          <span className="active">Dashboard</span>
-          <span>Incidents</span>
-          <span>AI Analysis</span>
-          <span>Historical Cases</span>
-          <span>Settings</span>
+          {navItems.map((item) => (
+            <button className={item === "Dashboard" ? "active" : ""} key={item} type="button">
+              {item}
+            </button>
+          ))}
         </nav>
       </aside>
 
       <main className="app-shell">
-        <header className="hero">
+        <header className="topbar">
           <div>
             <p className="eyebrow">AI Operations Command Center</p>
-            <h1>OpsPilot AI</h1>
-            <p className="subtitle">
-              Detect warehouse incidents, assess risk, retrieve similar cases, and generate operational recommendations.
-            </p>
+            <h1>Incident review workspace</h1>
           </div>
 
-          <div className="status-pill">
+          <div className={`status-pill ${health}`}>
             <span className="pulse" />
-            Backend Connected
+            {healthLabel}
           </div>
         </header>
 
-        <section className="kpi-row">
-          <div className="kpi-card">
-            <span>Active Incidents</span>
-            <strong>{result ? 1 : 0}</strong>
+        <section className="overview">
+          <div>
+            <span>Active Incident</span>
+            <strong>{result ? result.incident_id?.slice(-8) || "Open" : "None"}</strong>
           </div>
-          <div className="kpi-card">
+          <div>
             <span>Severity</span>
             <strong>
-              <span className={severityClass(result?.severity)}>
-                {result?.severity || "N/A"}
-              </span>
+              <span className={severityClass(result?.severity)}>{result?.severity || "N/A"}</span>
             </strong>
           </div>
-          <div className="kpi-card">
+          <div>
             <span>Historical Matches</span>
             <strong>{historicalMatches}</strong>
           </div>
-          <div className="kpi-card">
+          <div>
             <span>AI Confidence</span>
-            <strong>{result ? "94%" : "--"}</strong>
+            <strong>{confidenceLabel}</strong>
           </div>
         </section>
 
-        <section className="top-grid">
-          <div className="card upload-card">
-            <h2>Incident Image</h2>
-            <p>Upload a warehouse or operations image for AI analysis.</p>
+        <section className="workspace-grid">
+          <div className="panel upload-panel">
+            <div className="panel-heading">
+              <div>
+                <h2>Incident Image</h2>
+                <p>Upload a warehouse or operations image for analysis.</p>
+              </div>
+              <span className="panel-token">{file ? "Ready" : "Waiting"}</span>
+            </div>
 
-            <label className="drop-zone">
+            <label className={`drop-zone ${preview ? "has-preview" : ""}`}>
               <input type="file" accept="image/*" onChange={handleFileChange} />
               {preview ? (
-                <img src={preview} alt="Uploaded preview" className="preview-img" />
+                <img src={preview} alt="Uploaded incident preview" className="preview-img" />
               ) : (
                 <div className="drop-placeholder">
-                  <div className="upload-icon">⬆</div>
-                  <strong>Choose an image</strong>
-                  <span>PNG, JPG, JPEG supported</span>
+                  <div className="upload-mark">UP</div>
+                  <strong>Choose an incident image</strong>
+                  <span>{uploadMeta}</span>
                 </div>
               )}
             </label>
 
-            {file && <p className="file-name">{file.name}</p>}
-
-            <button className="primary-btn" onClick={handleUpload} disabled={loading}>
-              {loading ? "Analyzing with AI Agents..." : "Analyze Image"}
-            </button>
+            <div className="upload-footer">
+              <div>
+                <span>Selected file</span>
+                <strong>{file?.name || "No file selected"}</strong>
+                <small>{uploadMeta}</small>
+              </div>
+              <button className="primary-btn" onClick={handleUpload} disabled={loading} type="button">
+                {loading ? "Analyzing" : "Analyze"}
+              </button>
+            </div>
 
             {loading && (
               <div className="agent-progress">
-                <div>✅ Vision Agent reading image</div>
-                <div>✅ Retrieval Agent checking memory</div>
-                <div>✅ Recommendation Agent preparing action plan</div>
+                <span />
+                <div>
+                  <strong>Agents are reviewing the image</strong>
+                  <p>Vision, severity, memory, and recommendation steps are running.</p>
+                </div>
               </div>
             )}
 
             {error && <div className="error-box">{error}</div>}
           </div>
 
-          <div className="card summary-card">
-            <h2>Incident Summary</h2>
-            <p>AI-generated operational classification.</p>
+          <div className="panel summary-panel">
+            <div className="panel-heading">
+              <div>
+                <h2>Incident Summary</h2>
+                <p>Operational classification from the latest run.</p>
+              </div>
+            </div>
 
             {result ? (
-              <div className="summary-grid">
-                <div className="metric">
-                  <span>Incident ID</span>
-                  <strong>{result.incident_id?.slice(-8) || "N/A"}</strong>
-                </div>
-
-                <div className="metric">
-                  <span>Issue Type</span>
+              <div className="summary-list">
+                <div>
+                  <span>Issue type</span>
                   <strong>{result.issue_type || "Unknown"}</strong>
                 </div>
-
-                <div className="metric">
+                <div>
                   <span>Severity</span>
                   <strong>
-                    <span className={severityClass(result.severity)}>
-                      {result.severity || "unknown"}
-                    </span>
+                    <span className={severityClass(result.severity)}>{result.severity || "unknown"}</span>
                   </strong>
                 </div>
-
-                <div className="metric">
-                  <span>Historical Matches</span>
-                  <strong>{historicalMatches}</strong>
+                <div>
+                  <span>Root cause</span>
+                  <strong>{extractRootCause(result.vision_summary)}</strong>
                 </div>
               </div>
             ) : (
-              <div className="empty-state">
-                Upload an image to generate an incident report.
-              </div>
+              <div className="empty-state">Upload an image to generate an incident report.</div>
             )}
           </div>
         </section>
 
-        {result && (
-          <>
-            <section className="insight-grid">
-              <div className="card insight-card">
-                <h2>AI Insight</h2>
-                <p>
-                  This incident was classified as <b>{result.issue_type}</b> with{" "}
-                  <b>{result.severity}</b> severity. MongoDB memory found{" "}
-                  <b>{historicalMatches}</b> similar historical cases.
-                </p>
-              </div>
-
-              <div className="card insight-card">
-                <h2>Likely Root Cause</h2>
-                <p>{extractRootCause(result.vision_summary)}</p>
-              </div>
-
-              <div className="card recommendation-card">
-                <h2>Recommended Action</h2>
-                <p>{result.recommendation}</p>
-                <div className="recommendation-list">
-                  <div>Review detected issue</div>
-                  <div>Compare historical cases</div>
-                  <div>Assign operator remediation</div>
-                </div>
-              </div>
-            </section>
-
-            <section className="result-grid">
-              <div className="card analysis-card">
+        <section className="detail-grid">
+          <div className="panel analysis-panel">
+            <div className="panel-heading">
+              <div>
                 <h2>AI Operational Analysis</h2>
-                <pre>{cleanText(result.vision_summary)}</pre>
+                <p>Concise reading from the vision model.</p>
               </div>
+            </div>
+            <pre>{cleanText(result?.vision_summary)}</pre>
+          </div>
 
-              <div className="card timeline-card">
-                <h2>Agent Activity Timeline</h2>
-                <div className="timeline">
-                  <div><span /> Vision Agent analyzed image</div>
-                  <div><span /> Risk classifier detected severity</div>
-                  <div><span /> Retrieval Agent searched MongoDB memory</div>
-                  <div><span /> Recommendation Agent generated next action</div>
+          <div className="panel timeline-panel">
+            <div className="panel-heading">
+              <div>
+                <h2>Activity Timeline</h2>
+                <p>Current review path.</p>
+              </div>
+            </div>
+            <div className="timeline">
+              {timeline.map((item) => (
+                <div key={item}>
+                  <span />
+                  {item}
                 </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="panel recommendation-panel">
+            <div className="panel-heading">
+              <div>
+                <h2>Recommended Action</h2>
+                <p>Next operational move.</p>
               </div>
+            </div>
+            <p className="recommendation-copy">
+              {result?.recommendation ||
+                "Run an analysis to generate a recommendation from the incident context."}
+            </p>
+            <div className="action-list">
+              {actionSteps.map((step, index) => (
+                <div key={step}>
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  {step}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
 
-              <div className="card history-card">
-                <h2>Similar Historical Incidents</h2>
-                <p>Retrieved from MongoDB operational memory.</p>
+        <section className="panel history-panel">
+          <div className="panel-heading">
+            <div>
+              <h2>Similar Historical Incidents</h2>
+              <p>Retrieved from operational memory.</p>
+            </div>
+            <span className="panel-token">{historicalMatches} matches</span>
+          </div>
 
-                {historicalMatches ? (
-                  <div className="incident-list">
-                    {result.similar_incidents.map((incident, index) => (
-                      <div className="incident-item" key={index}>
-                        <div className="incident-item-header">
-                          <strong>{incident.issue_type || "Unknown issue"}</strong>
-                          <span className={severityClass(incident.severity)}>
-                            {incident.severity || "unknown"}
-                          </span>
-                        </div>
-
-                        <p className="incident-date">
-                          {incident.created_at
-                            ? new Date(incident.created_at).toLocaleString()
-                            : "No timestamp"}
-                        </p>
-
-                        <pre>{cleanText(incident.vision_summary)}</pre>
-                      </div>
-                    ))}
+          {historicalMatches ? (
+            <div className="incident-list">
+              {result.similar_incidents.map((incident, index) => (
+                <article className="incident-item" key={`${incident.created_at || "incident"}-${index}`}>
+                  <div className="incident-item-header">
+                    <strong>{incident.issue_type || "Unknown issue"}</strong>
+                    <span className={severityClass(incident.severity)}>
+                      {incident.severity || "unknown"}
+                    </span>
                   </div>
-                ) : (
-                  <div className="empty-state">
-                    No similar incidents found yet. This incident will become memory for future analysis.
-                  </div>
-                )}
-              </div>
-            </section>
-          </>
-        )}
+
+                  <p className="incident-date">
+                    {incident.created_at ? new Date(incident.created_at).toLocaleString() : "No timestamp"}
+                  </p>
+
+                  <pre>{cleanText(incident.vision_summary)}</pre>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">
+              No similar incidents found yet. Completed analyses will become memory for future reviews.
+            </div>
+          )}
+        </section>
       </main>
     </div>
   );
