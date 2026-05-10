@@ -16,3 +16,4 @@ app.add_middleware(
 
 app.include_router(health_router, prefix="/health", tags=["health"])
 app.include_router(upload_router, prefix="/upload", tags=["upload"])
+app.include_router(upload_router, prefix="/api", tags=["analysis"])

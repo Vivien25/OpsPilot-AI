@@ -1,17 +1,49 @@
+import json
+import re
+
 from services.gemini.gemini_client import client, MODEL
 
-def analyze_image(image_bytes: bytes, mime_type: str) -> str:
+
+def _extract_json(text: str) -> dict:
+    if not text:
+        return {}
+
+    cleaned = text.strip()
+    cleaned = re.sub(r"^```json", "", cleaned)
+    cleaned = re.sub(r"^```", "", cleaned)
+    cleaned = re.sub(r"```$", "", cleaned).strip()
+
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        match = re.search(r"\{[\s\S]*\}", cleaned)
+        if match:
+            try:
+                return json.loads(match.group(0))
+            except json.JSONDecodeError:
+                return {}
+
+    return {}
+
+def analyze_image(image_bytes: bytes, mime_type: str) -> dict:
     prompt = """
-You are an industrial operations AI assistant.
+You are an industrial operations vision extractor.
 
-Analyze this image and identify:
-1. What is visible
-2. Any operational issue, defect, safety risk, or abnormal condition
-3. Severity: low, medium, or high
-4. Possible root cause
-5. Recommended next action
+Extract only observable facts from this warehouse image.
+Do not decide whether the placement is correct.
+Do not recommend an action.
+Do not infer policy from outside the image.
 
-Return a concise operational summary.
+Return ONLY valid JSON in this exact shape:
+
+{
+  "item_id": "item id such as CHEM-102, or null",
+  "detected_zone": "visible warehouse zone sign such as Finished Goods, or null",
+  "visible_label": "visible label text, or null",
+  "item_type": "brief visible item type, or null",
+  "visual_evidence": "one sentence describing the visual evidence",
+  "confidence": 0.0
+}
 """
 
     try:
@@ -32,11 +64,45 @@ Return a concise operational summary.
                 }
             ],
         )
-        return response.text or "No vision summary returned."
+        text = response.text or ""
+        data = _extract_json(text)
+
+        if data:
+            visual_evidence = data.get("visual_evidence") or "No visual evidence returned."
+            return {
+                "vision_summary": visual_evidence,
+                "item_id": data.get("item_id") or data.get("detected_item"),
+                "detected_item": data.get("item_id") or data.get("detected_item"),
+                "detected_zone": data.get("detected_zone"),
+                "visible_label": data.get("visible_label"),
+                "item_type": data.get("item_type"),
+                "visual_evidence": visual_evidence,
+                "vision_confidence": data.get("confidence"),
+            }
+
+        return {
+            "vision_summary": text or "No vision summary returned.",
+            "item_id": None,
+            "detected_item": None,
+            "detected_zone": None,
+            "visible_label": None,
+            "item_type": None,
+            "visual_evidence": text or "No visual evidence returned.",
+            "vision_confidence": None,
+        }
 
     except Exception as e:
         print("Gemini Vision error:", e)
-        return (
-            "Gemini Vision is temporarily unavailable due to high demand. "
-            "Please retry the upload in a moment."
-        )
+        return {
+            "vision_summary": (
+                "Gemini Vision is temporarily unavailable due to high demand. "
+                "Please retry the upload in a moment."
+            ),
+            "item_id": None,
+            "detected_item": None,
+            "detected_zone": None,
+            "visible_label": None,
+            "item_type": None,
+            "visual_evidence": None,
+            "vision_confidence": None,
+        }

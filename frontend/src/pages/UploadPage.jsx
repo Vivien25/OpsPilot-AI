@@ -5,7 +5,11 @@ import "./UploadPage.css";
 const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
 
 const navItems = ["Dashboard", "Incidents", "AI Analysis", "Historical Cases", "Settings"];
-const actionSteps = ["Review detected issue", "Compare historical cases", "Assign operator remediation"];
+const actionStepsFallback = [
+  "Review detected issue",
+  "Compare historical cases",
+  "Assign operator remediation",
+];
 const initialTimeline = ["Awaiting image", "AI analysis pending", "Memory lookup pending"];
 const completeTimeline = [
   "Vision agent analyzed image",
@@ -42,6 +46,42 @@ function formatBytes(bytes) {
   return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
 }
 
+function formatConfidence(confidence) {
+  if (typeof confidence !== "number") return "Pending";
+  const normalized = confidence > 1 ? confidence : confidence * 100;
+  return `${Math.round(normalized)}%`;
+}
+
+function normalizeList(value, fallback = []) {
+  if (Array.isArray(value)) return value.filter(Boolean);
+  if (typeof value === "string" && value.trim()) return [value.trim()];
+  return fallback;
+}
+
+function validationLabel(validation) {
+  if (!validation) return "Not checked";
+  return validation.is_valid ? "Valid" : "Needs review";
+}
+
+function zoneStatusLabel(isWrongZone) {
+  if (isWrongZone === true) return "Wrong zone";
+  if (isWrongZone === false) return "Correct zone";
+  return "Unknown";
+}
+
+function formatContact(contact) {
+  if (!contact) return "No contact returned.";
+
+  const parts = [
+    contact.name,
+    contact.position,
+    contact.email,
+    contact.phone,
+  ].filter(Boolean);
+
+  return parts.length ? parts.join(" · ") : "Contact details unavailable.";
+}
+
 export default function UploadPage() {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState("");
@@ -73,9 +113,22 @@ export default function UploadPage() {
     };
   }, [preview]);
 
-  const historicalMatches = result?.similar_incidents?.length || 0;
-  const timeline = result ? completeTimeline : initialTimeline;
-  const confidenceLabel = result ? "Model review complete" : "Pending";
+  const similarIncidents = normalizeList(result?.similar_incidents);
+  const historicalMatches = similarIncidents.length;
+  const timeline = result ? normalizeList(result.agent_trace, completeTimeline) : initialTimeline;
+  const actionSteps = normalizeList(result?.action_steps, actionStepsFallback);
+  const confidenceLabel = formatConfidence(result?.confidence);
+  const riskNotes = result?.risk || result?.risk_notes || "No additional risk notes returned.";
+  const hasZoneResult = Boolean(
+    result?.detected_item ||
+    result?.detected_zone ||
+    result?.expected_zone ||
+    result?.responsible_contact ||
+    typeof result?.is_wrong_zone === "boolean",
+  );
+  const validationSummary =
+    result?.validation?.validation_summary ||
+    (result?.validation ? "The report was checked by the validation agent." : "Validation has not run yet.");
   const healthLabel = {
     checking: "Checking backend",
     online: "Backend online",
@@ -111,7 +164,7 @@ export default function UploadPage() {
       setLoading(true);
       setError("");
 
-      const response = await axios.post(`${API_BASE}/upload/image`, formData, {
+      const response = await axios.post(`${API_BASE}/api/analyze`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -249,13 +302,104 @@ export default function UploadPage() {
                 </div>
                 <div>
                   <span>Root cause</span>
-                  <strong>{extractRootCause(result.vision_summary)}</strong>
+                  <strong>{result.root_cause || extractRootCause(result.vision_summary)}</strong>
+                </div>
+                <div>
+                  <span>Detected item</span>
+                  <strong>{result.item_id || result.detected_item || "Not returned"}</strong>
+                </div>
+                <div>
+                  <span>Detected zone</span>
+                  <strong>{result.detected_zone || "Not returned"}</strong>
+                </div>
+                <div>
+                  <span>Expected zone</span>
+                  <strong>{result.expected_zone || "Not returned"}</strong>
+                </div>
+                <div>
+                  <span>Wrong zone</span>
+                  <strong>{zoneStatusLabel(result.is_wrong_zone)}</strong>
+                </div>
+                <div>
+                  <span>Responsible contact</span>
+                  <strong>{formatContact(result.responsible_contact)}</strong>
+                </div>
+                <div>
+                  <span>GCS image</span>
+                  <strong>{result.image_gcs_uri || "Not stored"}</strong>
                 </div>
               </div>
             ) : (
               <div className="empty-state">Upload an image to generate an incident report.</div>
             )}
           </div>
+        </section>
+
+        <section className="panel zone-panel">
+          <div className="panel-heading">
+            <div>
+              <h2>Vision Observation</h2>
+              <p>Facts extracted from the image before agent reasoning.</p>
+            </div>
+            <span className={`zone-badge ${result?.is_wrong_zone ? "wrong" : "ok"}`}>
+              {zoneStatusLabel(result?.is_wrong_zone)}
+            </span>
+          </div>
+
+          {result && hasZoneResult ? (
+            <>
+              <div className="zone-grid">
+                <div>
+                  <span>Detected item</span>
+                  <strong>{result.item_id || result.detected_item || "Not detected"}</strong>
+                </div>
+                <div>
+                  <span>Visible label</span>
+                  <strong>{result.visible_label || "Not detected"}</strong>
+                </div>
+                <div>
+                  <span>Item type</span>
+                  <strong>{result.item_type || "Not detected"}</strong>
+                </div>
+                <div>
+                  <span>Detected zone</span>
+                  <strong>{result.detected_zone || "Not detected"}</strong>
+                </div>
+                <div>
+                  <span>Expected zone</span>
+                  <strong>{result.expected_zone || "Not found"}</strong>
+                </div>
+                <div>
+                  <span>Wrong zone</span>
+                  <strong>{zoneStatusLabel(result.is_wrong_zone)}</strong>
+                </div>
+                <div>
+                  <span>Vision confidence</span>
+                  <strong>{formatConfidence(result.vision_confidence)}</strong>
+                </div>
+              </div>
+
+              <div className="contact-strip">
+                <span>Visual evidence</span>
+                <strong>{result.visual_evidence || result.vision_summary || "No visual evidence returned."}</strong>
+              </div>
+
+              <div className="contact-strip">
+                <span>Agent reason</span>
+                <strong>{result.reason || "No agent reason returned."}</strong>
+              </div>
+
+              <div className="contact-strip">
+                <span>Responsible contact</span>
+                <strong>{formatContact(result.responsible_contact)}</strong>
+              </div>
+            </>
+          ) : (
+            <div className="empty-state">
+              No zone fields returned yet. Confirm the backend response includes detected_item, detected_zone,
+              expected_zone, is_wrong_zone, responsible_contact, and recommendation.
+            </div>
+          )}
         </section>
 
         <section className="detail-grid">
@@ -306,6 +450,29 @@ export default function UploadPage() {
               ))}
             </div>
           </div>
+
+          <div className="panel validation-panel">
+            <div className="panel-heading">
+              <div>
+                <h2>Validation</h2>
+                <p>Completeness check from the validation agent.</p>
+              </div>
+              <span className={`validation-badge ${result?.validation?.is_valid ? "valid" : "review"}`}>
+                {validationLabel(result?.validation)}
+              </span>
+            </div>
+            <p className="recommendation-copy">{validationSummary}</p>
+          </div>
+
+          <div className="panel risk-panel">
+            <div className="panel-heading">
+              <div>
+                <h2>Risk Notes</h2>
+                <p>Operational risk returned by the recommendation agent.</p>
+              </div>
+            </div>
+            <p className="recommendation-copy">{riskNotes}</p>
+          </div>
         </section>
 
         <section className="panel history-panel">
@@ -319,7 +486,7 @@ export default function UploadPage() {
 
           {historicalMatches ? (
             <div className="incident-list">
-              {result.similar_incidents.map((incident, index) => (
+              {similarIncidents.map((incident, index) => (
                 <article className="incident-item" key={`${incident.created_at || "incident"}-${index}`}>
                   <div className="incident-item-header">
                     <strong>{incident.issue_type || "Unknown issue"}</strong>

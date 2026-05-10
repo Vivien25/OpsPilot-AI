@@ -5,6 +5,11 @@ router = APIRouter()
 
 @router.post("/image")
 async def upload_image(file: UploadFile = File(...)):
+    return await analyze_image(file)
+
+
+@router.post("/analyze")
+async def analyze_image(file: UploadFile = File(...)):
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Only image files are supported")
 

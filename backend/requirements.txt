@@ -7,8 +7,10 @@ python-dotenv==1.0.1      # load .env
 pydantic==2.9.2
 
 google-genai==0.3.0       # Gemini SDK (IMPORTANT: correct one)
+google-cloud-storage==2.19.0
+google-cloud-bigquery==3.27.0
 
 pillow==10.4.0            # image processing
 
-# MongoDB (you’ll use soon)
+# MongoDB operational knowledge retrieval
 pymongo==4.8.0
