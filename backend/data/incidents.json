@@ -1,0 +1,10 @@
+[
+    {
+      "incident_id": "INC-001",
+      "item_id": "CHEM-102",
+      "issue_type": "Wrong Zone",
+      "description": "Solvent drum was placed in Finished Goods zone.",
+      "root_cause": "Forklift operator followed outdated staging instruction.",
+      "recommended_action": "Move item to Chemical Storage and notify zone supervisor."
+    }
+  ]

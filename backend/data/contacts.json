@@ -1,0 +1,16 @@
+[
+    {
+      "name": "John Smith",
+      "zone": "Chemical Storage",
+      "position": "Chemical Storage Supervisor",
+      "email": "john.smith@example.com",
+      "phone": "555-123-4567"
+    },
+    {
+      "name": "Amy Chen",
+      "zone": "Finished Goods",
+      "position": "Finished Goods Lead",
+      "email": "amy.chen@example.com",
+      "phone": "555-222-8888"
+    }
+  ]

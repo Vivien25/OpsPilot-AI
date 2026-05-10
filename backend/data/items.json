@@ -1,0 +1,18 @@
+[
+    {
+      "item_id": "CHEM-102",
+      "label": "Solvent Drum",
+      "description": "Flammable solvent used in production line cleaning.",
+      "expected_zone": "Chemical Storage",
+      "risk_level": "High",
+      "shipment_info": "Inbound shipment #IN-7782"
+    },
+    {
+      "item_id": "FG-220",
+      "label": "Finished Product Box",
+      "description": "Packaged finished goods ready for outbound shipment.",
+      "expected_zone": "Finished Goods",
+      "risk_level": "Low",
+      "shipment_info": "Outbound shipment #OUT-5521"
+    }
+  ]
