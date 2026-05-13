@@ -503,6 +503,11 @@ h2 {
   color: var(--green);
 }
 
+.zone-badge.review {
+  background: #fff7df;
+  color: var(--yellow);
+}
+
 .zone-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -536,6 +541,32 @@ h2 {
 
 .contact-strip {
   margin-top: 12px;
+}
+
+.manual-review {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid #f4d38b;
+  border-radius: 8px;
+  background: #fff9eb;
+}
+
+.manual-review span {
+  color: var(--yellow);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.manual-review strong {
+  color: #593c00;
+  line-height: 1.45;
+}
+
+.manual-review small {
+  color: #7a5a13;
 }
 
 .empty-state {

@@ -26,9 +26,9 @@ def analyze_wrong_zone(vision_result: dict):
             "similar_incidents": [],
             "responsible_contact": None,
             "responsible_person": None,
-            "risk": "Item master data was not found in MongoDB.",
-            "reason": "The item could not be matched to operational knowledge.",
-            "recommendation": "Please verify the item label manually."
+            "risk": "Required visual evidence is missing or the item is not present in MongoDB.",
+            "reason": "The agent could not compare zones because the item label was not observed or matched.",
+            "recommendation": "Retake the photo with the item label and zone sign visible, or enter the item and zone manually."
         }
 
     expected_zone = item["expected_zone"]
@@ -88,6 +88,14 @@ def run_investigation(image_bytes: bytes, mime_type: str) -> dict:
         mime_type=mime_type,
     )
     vision_summary = vision_result.get("vision_summary", "")
+    missing_observations = [
+        label
+        for label, value in {
+            "item_id": vision_result.get("item_id") or vision_result.get("detected_item"),
+            "detected_zone": vision_result.get("detected_zone"),
+        }.items()
+        if not value
+    ]
     wrong_zone_result = analyze_wrong_zone(vision_result)
 
     classification = classify_issue(vision_summary)
@@ -114,6 +122,8 @@ def run_investigation(image_bytes: bytes, mime_type: str) -> dict:
     "item_type": vision_result.get("item_type"),
     "visual_evidence": vision_result.get("visual_evidence"),
     "vision_confidence": vision_result.get("vision_confidence"),
+    "missing_observations": missing_observations,
+    "needs_manual_review": bool(missing_observations),
     "item_id": wrong_zone_result.get("item_id"),
     "detected_item": wrong_zone_result.get("detected_item"),
     "item_name": wrong_zone_result.get("item_name"),
@@ -149,6 +159,8 @@ def run_investigation(image_bytes: bytes, mime_type: str) -> dict:
     "item_type": incident["item_type"],
     "visual_evidence": incident["visual_evidence"],
     "vision_confidence": incident["vision_confidence"],
+    "missing_observations": incident["missing_observations"],
+    "needs_manual_review": incident["needs_manual_review"],
     "item_id": incident["item_id"],
     "detected_item": incident["detected_item"],
     "item_name": incident["item_name"],

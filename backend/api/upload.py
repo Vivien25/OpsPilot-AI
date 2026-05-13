@@ -17,7 +17,7 @@ async def analyze_image(file: UploadFile = File(...)):
 
     result = run_investigation(
         image_bytes=image_bytes,
-        mime_type=file.content_type
+        mime_type=file.content_type,
     )
 
     return result

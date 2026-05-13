@@ -120,6 +120,7 @@ export default function UploadPage() {
   const confidenceLabel = formatConfidence(result?.confidence);
   const riskNotes = result?.risk || result?.risk_notes || "No additional risk notes returned.";
   const hasZoneResult = Boolean(
+    result?.needs_manual_review ||
     result?.detected_item ||
     result?.detected_zone ||
     result?.expected_zone ||
@@ -306,15 +307,15 @@ export default function UploadPage() {
                 </div>
                 <div>
                   <span>Detected item</span>
-                  <strong>{result.item_id || result.detected_item || "Not returned"}</strong>
+                  <strong>{result.item_id || result.detected_item || "Not observed"}</strong>
                 </div>
                 <div>
                   <span>Detected zone</span>
-                  <strong>{result.detected_zone || "Not returned"}</strong>
+                  <strong>{result.detected_zone || "Not observed"}</strong>
                 </div>
                 <div>
                   <span>Expected zone</span>
-                  <strong>{result.expected_zone || "Not returned"}</strong>
+                  <strong>{result.expected_zone || "Unavailable until item is matched"}</strong>
                 </div>
                 <div>
                   <span>Wrong zone</span>
@@ -341,8 +342,8 @@ export default function UploadPage() {
               <h2>Vision Observation</h2>
               <p>Facts extracted from the image before agent reasoning.</p>
             </div>
-            <span className={`zone-badge ${result?.is_wrong_zone ? "wrong" : "ok"}`}>
-              {zoneStatusLabel(result?.is_wrong_zone)}
+            <span className={`zone-badge ${result?.needs_manual_review ? "review" : result?.is_wrong_zone ? "wrong" : "ok"}`}>
+              {result?.needs_manual_review ? "Manual review" : zoneStatusLabel(result?.is_wrong_zone)}
             </span>
           </div>
 
@@ -388,6 +389,18 @@ export default function UploadPage() {
                 <span>Agent reason</span>
                 <strong>{result.reason || "No agent reason returned."}</strong>
               </div>
+
+              {result.needs_manual_review && (
+                <div className="manual-review">
+                  <span>Manual review needed</span>
+                  <strong>
+                    Retake the photo with the item label and zone sign visible, or add a manual item/zone entry step.
+                  </strong>
+                  <small>
+                    Missing: {normalizeList(result.missing_observations).join(", ") || "required observations"}
+                  </small>
+                </div>
+              )}
 
               <div className="contact-strip">
                 <span>Responsible contact</span>

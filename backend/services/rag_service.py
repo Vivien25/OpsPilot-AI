@@ -20,7 +20,10 @@ def find_item(item_id: str):
     if not item_id:
         return None
 
-    item = db["items"].find_one({"item_id": item_id}, {"_id": 0})
+    item = db["items"].find_one(
+        {"item_id": {"$regex": f"^{item_id}$", "$options": "i"}},
+        {"_id": 0},
+    )
     if item:
         return item
 
@@ -36,7 +39,13 @@ def find_similar_incidents(item_id: str, issue_type: str = "Wrong Zone"):
 
     incidents = list(
         db["incidents"]
-        .find({"item_id": item_id, "issue_type": issue_type}, {"_id": 0})
+        .find(
+            {
+                "item_id": {"$regex": f"^{item_id}$", "$options": "i"},
+                "issue_type": {"$regex": f"^{issue_type}$", "$options": "i"},
+            },
+            {"_id": 0},
+        )
         .sort("created_at", -1)
         .limit(5)
     )
@@ -54,7 +63,10 @@ def find_contact_by_zone(zone: str):
     if not zone:
         return None
 
-    contact = db["contacts"].find_one({"zone": zone}, {"_id": 0})
+    contact = db["contacts"].find_one(
+        {"zone": {"$regex": f"^{zone}$", "$options": "i"}},
+        {"_id": 0},
+    )
     if contact:
         return contact
 
