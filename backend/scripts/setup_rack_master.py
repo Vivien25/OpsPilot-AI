@@ -12,14 +12,14 @@ from utils.config import BIGQUERY_DATASET, GCP_PROJECT_ID
 TABLE_NAME = "rack_master"
 
 ZONE_CONFIG = [
-    ("Receiving", "REC", ["Raw Material", "Packaging", "Finished Goods"], "Medium"),
-    ("Raw Materials", "RAW", ["Raw Material"], "Medium"),
-    ("Chemical Storage", "CHEM", ["Chemical"], "High"),
-    ("Packaging", "PKG", ["Packaging"], "Low"),
-    ("Production", "PROD", ["Raw Material", "Packaging"], "Medium"),
-    ("Finished Goods", "FG", ["Finished Goods"], "Low"),
-    ("Shipping", "SHIP", ["Finished Goods"], "Low"),
-    ("Maintenance", "MRO", ["Maintenance Part"], "Medium"),
+    ("Receiving", "REC", ["Production Material", "Packaging Supply", "Finished Product"], "Medium"),
+    ("Raw Materials", "RAW", ["Production Material"], "Medium"),
+    ("Chemical Storage", "CHEM", ["Hazardous Chemical"], "High"),
+    ("Packaging", "PKG", ["Packaging Supply"], "Low"),
+    ("Production", "PROD", ["Production Material", "Packaging Supply"], "Medium"),
+    ("Finished Goods", "FG", ["Finished Product"], "Low"),
+    ("Shipping", "SHIP", ["Finished Product"], "Low"),
+    ("Maintenance", "MRO", ["Maintenance Spare Part"], "Medium"),
 ]
 
 
@@ -59,7 +59,7 @@ def build_rows() -> list[dict]:
             "x_position": 538,
             "y_position": 96,
             "capacity_slots": 16,
-            "allowed_item_types": ["Chemical"],
+            "allowed_item_types": ["Hazardous Chemical"],
             "risk_zone": "High",
             "is_active": True,
         }
@@ -73,7 +73,7 @@ def build_rows() -> list[dict]:
             "x_position": 488,
             "y_position": 318,
             "capacity_slots": 24,
-            "allowed_item_types": ["Finished Goods"],
+            "allowed_item_types": ["Finished Product"],
             "risk_zone": "Low",
             "is_active": True,
         }

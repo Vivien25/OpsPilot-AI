@@ -2,19 +2,24 @@
   max-width: 760px;
 }
 
+.map-shell {
+  width: min(1760px, calc(100% - 32px));
+}
+
 .map-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.5fr);
+  grid-template-columns: 1fr;
   gap: 18px;
   margin-bottom: 18px;
 }
 
 .map-panel {
   min-width: 0;
+  padding: 24px;
 }
 
 .map-canvas {
-  overflow: hidden;
+  overflow: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface-soft);
@@ -23,7 +28,39 @@
 .map-canvas svg {
   display: block;
   width: 100%;
+  min-width: 1180px;
   height: auto;
+}
+
+.map-agent-state {
+  display: flex;
+  gap: 14px;
+  min-height: 360px;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: #344054;
+}
+
+.map-agent-state > span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 0 7px rgba(36, 91, 219, 0.13);
+}
+
+.map-agent-state strong,
+.map-agent-state p {
+  display: block;
+  margin: 0;
+}
+
+.map-agent-state p {
+  margin-top: 5px;
+  color: var(--muted);
 }
 
 .zone-summary-list,
@@ -31,6 +68,10 @@
 .rack-list {
   display: grid;
   gap: 10px;
+}
+
+.zone-summary-list {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .zone-summary-list > div,
@@ -183,16 +224,14 @@
 }
 
 @media (max-width: 1100px) {
-  .map-grid {
-    grid-template-columns: 1fr;
-  }
-
+  .zone-summary-list,
   .watch-list.horizontal {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 720px) {
+  .zone-summary-list,
   .watch-list.horizontal {
     grid-template-columns: 1fr;
   }

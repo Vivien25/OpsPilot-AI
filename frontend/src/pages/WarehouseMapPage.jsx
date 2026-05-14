@@ -106,7 +106,7 @@ export default function WarehouseMapPage({ activePage = "map", onNavigate = () =
 
           <div className={`status-pill ${error ? "offline" : "online"}`}>
             <span className="pulse" />
-            {loading ? "Loading map" : error ? "Map offline" : "Map live"}
+            {loading ? "Map Agent working" : error ? "Map offline" : "Map Agent complete"}
           </div>
         </header>
 
@@ -134,12 +134,20 @@ export default function WarehouseMapPage({ activePage = "map", onNavigate = () =
             <div className="panel-heading">
               <div>
                 <h2>Warehouse Map</h2>
-                <p>Live SVG generated from inventory map records.</p>
+                <p>Blue racks are occupied. Green racks are empty. Gray racks are inactive.</p>
               </div>
               <span className="panel-token">{mapData.source || "pending"}</span>
             </div>
 
-            {error ? (
+            {loading ? (
+              <div className="map-agent-state">
+                <span />
+                <div>
+                  <strong>Map Agent is creating the warehouse map now</strong>
+                  <p>Reading rack master, calculating occupancy, and generating the SVG layout.</p>
+                </div>
+              </div>
+            ) : error ? (
               <div className="empty-state">{error}</div>
             ) : (
               <div className="map-canvas" dangerouslySetInnerHTML={{ __html: mapData.svg || "" }} />
@@ -162,7 +170,7 @@ export default function WarehouseMapPage({ activePage = "map", onNavigate = () =
                     <span>{zone.quantity} units</span>
                   </div>
                   <small>
-                    {zone.item_count} items · {zone.occupied_rack_count || 0}/{zone.rack_count || 0} racks occupied
+                    {zone.item_count} items · {zone.occupied_rack_count || 0}/{zone.rack_count || 0} racks occupied · {zone.open_slot_count || 0} open slots
                   </small>
                 </div>
               ))}

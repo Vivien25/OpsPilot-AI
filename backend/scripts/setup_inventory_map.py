@@ -12,11 +12,11 @@ from utils.config import BIGQUERY_DATASET, GCP_PROJECT_ID
 TABLE_NAME = "inventory_map"
 
 ITEM_TYPES = [
-    ("CHEM", "Chemical", "Chemical Storage", "High", "active"),
-    ("FG", "Finished Goods", "Finished Goods", "Low", "ready_to_ship"),
-    ("RAW", "Raw Material", "Raw Materials", "Medium", "active"),
-    ("PKG", "Packaging", "Packaging", "Low", "active"),
-    ("MRO", "Maintenance Part", "Maintenance", "Medium", "reserved"),
+    ("CHEM", "Hazardous Chemical", "Chemical Storage", "High", "active"),
+    ("FG", "Finished Product", "Finished Goods", "Low", "ready_to_ship"),
+    ("RAW", "Production Material", "Raw Materials", "Medium", "active"),
+    ("PKG", "Packaging Supply", "Packaging", "Low", "active"),
+    ("MRO", "Maintenance Spare Part", "Maintenance", "Medium", "reserved"),
 ]
 
 ITEM_NAMES = {
@@ -61,7 +61,7 @@ def build_rows(count: int = 100) -> list[dict]:
         {
             "item_id": "CHEM-102",
             "item_name": "Solvent Drum",
-            "item_type": "Chemical",
+            "item_type": "Hazardous Chemical",
             "zone": "Chemical Storage",
             "rack": "A03",
             "bin_location": "A03-B2",
@@ -75,7 +75,7 @@ def build_rows(count: int = 100) -> list[dict]:
         {
             "item_id": "FG-220",
             "item_name": "Product Box",
-            "item_type": "Finished Goods",
+            "item_type": "Finished Product",
             "zone": "Finished Goods",
             "rack": "B12",
             "bin_location": "B12-C1",
