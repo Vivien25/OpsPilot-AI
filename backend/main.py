@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.upload import router as upload_router
 from api.health import router as health_router
+from api.warehouse_map import router as warehouse_map_router
 
 app = FastAPI(title="OpsPilot AI")
 
@@ -17,3 +18,4 @@ app.add_middleware(
 app.include_router(health_router, prefix="/health", tags=["health"])
 app.include_router(upload_router, prefix="/upload", tags=["upload"])
 app.include_router(upload_router, prefix="/api", tags=["analysis"])
+app.include_router(warehouse_map_router, prefix="/api", tags=["warehouse-map"])

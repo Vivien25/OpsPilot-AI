@@ -4,6 +4,8 @@ from uuid import uuid4
 from utils.config import (
     BIGQUERY_ANALYSIS_RESULTS_TABLE,
     BIGQUERY_DATASET,
+    BIGQUERY_INVENTORY_MAP_TABLE,
+    BIGQUERY_RACK_MASTER_TABLE,
     GCP_PROJECT_ID,
     USE_BIGQUERY_ANALYTICS,
 )
@@ -56,3 +58,73 @@ def save_analysis_result(report: dict) -> str:
         raise RuntimeError(f"BigQuery analytics insert failed: {errors}")
 
     return analysis_id
+
+
+def fetch_inventory_map(limit: int = 100) -> list[dict]:
+    """
+    Read the warehouse inventory map used by the frontend warehouse map.
+    BigQuery is analytics storage, so callers should tolerate an empty result.
+    """
+    client = _bigquery_client()
+    if not client:
+        return []
+
+    safe_limit = max(1, min(int(limit), 500))
+    query = f"""
+        SELECT
+            item_id,
+            item_name,
+            item_type,
+            zone,
+            rack,
+            bin_location,
+            quantity,
+            shipment_id,
+            status,
+            risk_level,
+            CAST(last_updated AS STRING) AS last_updated
+        FROM `{_table(BIGQUERY_INVENTORY_MAP_TABLE)}`
+        ORDER BY zone, rack, bin_location
+        LIMIT {safe_limit}
+    """
+
+    try:
+        return [dict(row) for row in client.query(query).result()]
+    except Exception as exc:
+        print(f"BigQuery inventory map read skipped: {exc}")
+        return []
+
+
+def fetch_rack_master(limit: int = 200) -> list[dict]:
+    """
+    Read the physical rack layout table. Occupancy is calculated by map_agent
+    against inventory_map so this stays a stable rack master.
+    """
+    client = _bigquery_client()
+    if not client:
+        return []
+
+    safe_limit = max(1, min(int(limit), 1000))
+    query = f"""
+        SELECT
+            rack_id,
+            zone,
+            aisle,
+            rack_label,
+            x_position,
+            y_position,
+            capacity_slots,
+            allowed_item_types,
+            risk_zone,
+            is_active,
+            CAST(last_updated AS STRING) AS last_updated
+        FROM `{_table(BIGQUERY_RACK_MASTER_TABLE)}`
+        ORDER BY zone, aisle, rack_label
+        LIMIT {safe_limit}
+    """
+
+    try:
+        return [dict(row) for row in client.query(query).result()]
+    except Exception as exc:
+        print(f"BigQuery rack master read skipped: {exc}")
+        return []

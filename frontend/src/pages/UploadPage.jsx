@@ -4,7 +4,10 @@ import "./UploadPage.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
 
-const navItems = ["Dashboard", "Incidents", "AI Analysis", "Historical Cases", "Settings"];
+const navItems = [
+  { id: "map", label: "Warehouse Map" },
+  { id: "analysis", label: "Image Analysis" },
+];
 const actionStepsFallback = [
   "Review detected issue",
   "Compare historical cases",
@@ -82,7 +85,7 @@ function formatContact(contact) {
   return parts.length ? parts.join(" · ") : "Contact details unavailable.";
 }
 
-export default function UploadPage() {
+export default function UploadPage({ activePage = "analysis", onNavigate = () => {} }) {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState("");
   const [result, setResult] = useState(null);
@@ -193,8 +196,13 @@ export default function UploadPage() {
 
         <nav>
           {navItems.map((item) => (
-            <button className={item === "Dashboard" ? "active" : ""} key={item} type="button">
-              {item}
+            <button
+              className={activePage === item.id ? "active" : ""}
+              key={item.id}
+              onClick={() => onNavigate(item.id)}
+              type="button"
+            >
+              {item.label}
             </button>
           ))}
         </nav>
@@ -204,7 +212,7 @@ export default function UploadPage() {
         <header className="topbar">
           <div>
             <p className="eyebrow">AI Operations Command Center</p>
-            <h1>Incident review workspace</h1>
+            <h1>Image analysis workspace</h1>
           </div>
 
           <div className={`status-pill ${health}`}>
