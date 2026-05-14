@@ -106,3 +106,89 @@ Return ONLY valid JSON in this exact shape:
             "visual_evidence": None,
             "vision_confidence": None,
         }
+
+
+def analyze_package_image(image_bytes: bytes, mime_type: str) -> dict:
+    prompt = """
+You are an industrial package recognition vision extractor.
+
+Extract only observable facts from this box or package photo.
+Do not decide whether the package is in the right place.
+Do not recommend an action.
+
+If a label is visible, extract box_id and item_id exactly as written.
+If no label is visible, describe visual features that can be used for lookup.
+
+Return ONLY valid JSON in this exact shape:
+
+{
+  "box_id": "box id such as BOX-CHEM-102, or null",
+  "item_id": "item id such as CHEM-102, or null",
+  "visible_label": "visible label text, or null",
+  "label_found": true,
+  "color": "main package color, or null",
+  "package_type": "box, carton, crate, drum box, parts bin, or null",
+  "visual_description": "one sentence describing visual features",
+  "confidence": 0.0
+}
+"""
+
+    try:
+        response = client.models.generate_content(
+            model=MODEL,
+            contents=[
+                {
+                    "role": "user",
+                    "parts": [
+                        {"text": prompt},
+                        {
+                            "inline_data": {
+                                "mime_type": mime_type,
+                                "data": image_bytes,
+                            }
+                        },
+                    ],
+                }
+            ],
+        )
+        text = response.text or ""
+        data = _extract_json(text)
+
+        if data:
+            return {
+                "vision_summary": data.get("visual_description") or "No visual description returned.",
+                "box_id": data.get("box_id"),
+                "item_id": data.get("item_id"),
+                "visible_label": data.get("visible_label"),
+                "label_found": bool(data.get("label_found") or data.get("box_id") or data.get("item_id")),
+                "color": data.get("color"),
+                "package_type": data.get("package_type"),
+                "visual_description": data.get("visual_description"),
+                "vision_confidence": data.get("confidence"),
+            }
+
+        return {
+            "vision_summary": text or "No vision summary returned.",
+            "box_id": None,
+            "item_id": None,
+            "visible_label": None,
+            "label_found": False,
+            "color": None,
+            "package_type": None,
+            "visual_description": text or "No visual description returned.",
+            "vision_confidence": None,
+        }
+
+    except Exception as e:
+        print("Gemini Package Vision error:", e)
+        return {
+            "vision_summary": "Gemini Vision is temporarily unavailable. Please retry the upload in a moment.",
+            "box_id": None,
+            "item_id": None,
+            "visible_label": None,
+            "label_found": False,
+            "color": None,
+            "package_type": None,
+            "visual_description": None,
+            "vision_confidence": None,
+        }

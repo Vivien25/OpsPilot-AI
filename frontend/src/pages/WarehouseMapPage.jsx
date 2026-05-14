@@ -7,7 +7,7 @@ const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
 
 const navItems = [
   { id: "map", label: "Warehouse Map" },
-  { id: "analysis", label: "Image Analysis" },
+  { id: "analysis", label: "Package Recognition" },
 ];
 
 const fallbackMap = {

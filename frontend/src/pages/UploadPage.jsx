@@ -6,25 +6,26 @@ const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
 
 const navItems = [
   { id: "map", label: "Warehouse Map" },
-  { id: "analysis", label: "Image Analysis" },
+  { id: "analysis", label: "Package Recognition" },
 ];
 const actionStepsFallback = [
-  "Review detected issue",
-  "Compare historical cases",
-  "Assign operator remediation",
+  "Check visible package label",
+  "Match against box master",
+  "Route package to expected rack",
 ];
-const initialTimeline = ["Awaiting image", "AI analysis pending", "Memory lookup pending"];
+const initialTimeline = ["Awaiting package photo", "Vision label check pending", "Box master lookup pending"];
 const completeTimeline = [
-  "Vision agent analyzed image",
-  "Risk classifier detected severity",
-  "Retrieval agent searched memory",
-  "Recommendation agent generated next action",
+  "Gemini Vision checked the package label",
+  "Box Master lookup matched package context",
+  "Zone and contact context were retrieved",
+  "Package Recognition Agent generated recommendation",
 ];
 
 function severityClass(severity) {
-  if (severity === "high") return "severity high";
-  if (severity === "medium") return "severity medium";
-  if (severity === "low") return "severity low";
+  const level = String(severity || "").toLowerCase();
+  if (level === "high") return "severity high";
+  if (level === "medium") return "severity medium";
+  if (level === "low") return "severity low";
   return "severity unknown";
 }
 
@@ -168,7 +169,7 @@ export default function UploadPage({ activePage = "analysis", onNavigate = () =>
       setLoading(true);
       setError("");
 
-      const response = await axios.post(`${API_BASE}/api/analyze`, formData, {
+      const response = await axios.post(`${API_BASE}/api/package/recognize`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -177,7 +178,7 @@ export default function UploadPage({ activePage = "analysis", onNavigate = () =>
     } catch (err) {
       console.error(err);
       setHealth("offline");
-      setError("Analysis failed. Confirm the backend, Gemini key, and MongoDB connection are available.");
+      setError("Package recognition failed. Confirm the backend, Gemini key, and BigQuery connection are available.");
     } finally {
       setLoading(false);
     }
@@ -212,7 +213,7 @@ export default function UploadPage({ activePage = "analysis", onNavigate = () =>
         <header className="topbar">
           <div>
             <p className="eyebrow">AI Operations Command Center</p>
-            <h1>Image analysis workspace</h1>
+            <h1>Package recognition workspace</h1>
           </div>
 
           <div className={`status-pill ${health}`}>
@@ -247,7 +248,7 @@ export default function UploadPage({ activePage = "analysis", onNavigate = () =>
             <div className="panel-heading">
               <div>
                 <h2>Incident Image</h2>
-                <p>Upload a warehouse or operations image for analysis.</p>
+                <p>Upload a box photo so the package recognition agent can identify and route it.</p>
               </div>
               <span className="panel-token">{file ? "Ready" : "Waiting"}</span>
             </div>
@@ -280,8 +281,8 @@ export default function UploadPage({ activePage = "analysis", onNavigate = () =>
               <div className="agent-progress">
                 <span />
                 <div>
-                  <strong>Agents are reviewing the image</strong>
-                  <p>Vision, severity, memory, and recommendation steps are running.</p>
+                  <strong>Package Recognition Agent is reviewing the photo</strong>
+                  <p>Gemini Vision, box master lookup, and routing recommendation steps are running.</p>
                 </div>
               </div>
             )}
@@ -292,8 +293,8 @@ export default function UploadPage({ activePage = "analysis", onNavigate = () =>
           <div className="panel summary-panel">
             <div className="panel-heading">
               <div>
-                <h2>Incident Summary</h2>
-                <p>Operational classification from the latest run.</p>
+                <h2>Package Summary</h2>
+                <p>Recognition and routing result from the latest run.</p>
               </div>
             </div>
 
@@ -315,15 +316,19 @@ export default function UploadPage({ activePage = "analysis", onNavigate = () =>
                 </div>
                 <div>
                   <span>Detected item</span>
-                  <strong>{result.item_id || result.detected_item || "Not observed"}</strong>
+                  <strong>{result.box_id || result.item_id || result.detected_item || "Not observed"}</strong>
                 </div>
                 <div>
                   <span>Detected zone</span>
-                  <strong>{result.detected_zone || "Not observed"}</strong>
+                  <strong>{result.detected_zone || "Not applicable"}</strong>
                 </div>
                 <div>
                   <span>Expected zone</span>
                   <strong>{result.expected_zone || "Unavailable until item is matched"}</strong>
+                </div>
+                <div>
+                  <span>Expected rack</span>
+                  <strong>{result.expected_rack || "Unavailable until package is matched"}</strong>
                 </div>
                 <div>
                   <span>Wrong zone</span>
@@ -339,7 +344,7 @@ export default function UploadPage({ activePage = "analysis", onNavigate = () =>
                 </div>
               </div>
             ) : (
-              <div className="empty-state">Upload an image to generate an incident report.</div>
+              <div className="empty-state">Upload a box photo to generate a package recognition report.</div>
             )}
           </div>
         </section>
@@ -348,7 +353,7 @@ export default function UploadPage({ activePage = "analysis", onNavigate = () =>
           <div className="panel-heading">
             <div>
               <h2>Vision Observation</h2>
-              <p>Facts extracted from the image before agent reasoning.</p>
+              <p>Facts extracted from the package photo before routing logic.</p>
             </div>
             <span className={`zone-badge ${result?.needs_manual_review ? "review" : result?.is_wrong_zone ? "wrong" : "ok"}`}>
               {result?.needs_manual_review ? "Manual review" : zoneStatusLabel(result?.is_wrong_zone)}
@@ -360,7 +365,7 @@ export default function UploadPage({ activePage = "analysis", onNavigate = () =>
               <div className="zone-grid">
                 <div>
                   <span>Detected item</span>
-                  <strong>{result.item_id || result.detected_item || "Not detected"}</strong>
+                  <strong>{result.box_id || result.item_id || result.detected_item || "Not detected"}</strong>
                 </div>
                 <div>
                   <span>Visible label</span>
@@ -368,7 +373,7 @@ export default function UploadPage({ activePage = "analysis", onNavigate = () =>
                 </div>
                 <div>
                   <span>Item type</span>
-                  <strong>{result.item_type || "Not detected"}</strong>
+                  <strong>{result.package_type || result.item_type || "Not detected"}</strong>
                 </div>
                 <div>
                   <span>Detected zone</span>
@@ -377,6 +382,10 @@ export default function UploadPage({ activePage = "analysis", onNavigate = () =>
                 <div>
                   <span>Expected zone</span>
                   <strong>{result.expected_zone || "Not found"}</strong>
+                </div>
+                <div>
+                  <span>Expected rack</span>
+                  <strong>{result.expected_rack || "Not found"}</strong>
                 </div>
                 <div>
                   <span>Wrong zone</span>
@@ -402,7 +411,7 @@ export default function UploadPage({ activePage = "analysis", onNavigate = () =>
                 <div className="manual-review">
                   <span>Manual review needed</span>
                   <strong>
-                    Retake the photo with the item label and zone sign visible, or add a manual item/zone entry step.
+                    Retake the photo with the box label visible, or add a manual box ID entry step.
                   </strong>
                   <small>
                     Missing: {normalizeList(result.missing_observations).join(", ") || "required observations"}
@@ -417,8 +426,8 @@ export default function UploadPage({ activePage = "analysis", onNavigate = () =>
             </>
           ) : (
             <div className="empty-state">
-              No zone fields returned yet. Confirm the backend response includes detected_item, detected_zone,
-              expected_zone, is_wrong_zone, responsible_contact, and recommendation.
+                No package fields returned yet. Confirm the backend response includes box_id, item_id,
+              expected_zone, expected_rack, responsible_contact, and recommendation.
             </div>
           )}
         </section>
@@ -427,8 +436,8 @@ export default function UploadPage({ activePage = "analysis", onNavigate = () =>
           <div className="panel analysis-panel">
             <div className="panel-heading">
               <div>
-                <h2>AI Operational Analysis</h2>
-                <p>Concise reading from the vision model.</p>
+                <h2>Package Vision Analysis</h2>
+                <p>Concise reading from Gemini Vision.</p>
               </div>
             </div>
             <pre>{cleanText(result?.vision_summary)}</pre>
@@ -460,7 +469,7 @@ export default function UploadPage({ activePage = "analysis", onNavigate = () =>
             </div>
             <p className="recommendation-copy">
               {result?.recommendation ||
-                "Run an analysis to generate a recommendation from the incident context."}
+                "Run package recognition to generate a routing recommendation."}
             </p>
             <div className="action-list">
               {actionSteps.map((step, index) => (
@@ -499,8 +508,8 @@ export default function UploadPage({ activePage = "analysis", onNavigate = () =>
         <section className="panel history-panel">
           <div className="panel-heading">
             <div>
-              <h2>Similar Historical Incidents</h2>
-              <p>Retrieved from operational memory.</p>
+              <h2>Visual Match Candidates</h2>
+              <p>Best guesses returned when the package label is missing.</p>
             </div>
             <span className="panel-token">{historicalMatches} matches</span>
           </div>
@@ -508,25 +517,26 @@ export default function UploadPage({ activePage = "analysis", onNavigate = () =>
           {historicalMatches ? (
             <div className="incident-list">
               {similarIncidents.map((incident, index) => (
-                <article className="incident-item" key={`${incident.created_at || "incident"}-${index}`}>
+                <article className="incident-item" key={`${incident.box_id || incident.created_at || "candidate"}-${index}`}>
                   <div className="incident-item-header">
-                    <strong>{incident.issue_type || "Unknown issue"}</strong>
+                    <strong>{incident.box_id || incident.item_id || incident.issue_type || "Unknown package"}</strong>
                     <span className={severityClass(incident.severity)}>
-                      {incident.severity || "unknown"}
+                      {incident.risk_level || incident.severity || "unknown"}
                     </span>
                   </div>
 
                   <p className="incident-date">
-                    {incident.created_at ? new Date(incident.created_at).toLocaleString() : "No timestamp"}
+                    {[incident.item_name, incident.expected_zone, incident.expected_rack].filter(Boolean).join(" · ") ||
+                      (incident.created_at ? new Date(incident.created_at).toLocaleString() : "No package context")}
                   </p>
 
-                  <pre>{cleanText(incident.vision_summary)}</pre>
+                  <pre>{cleanText(incident.visual_description || incident.vision_summary || incident.box_description)}</pre>
                 </article>
               ))}
             </div>
           ) : (
             <div className="empty-state">
-              No similar incidents found yet. Completed analyses will become memory for future reviews.
+              No visual match candidates returned. A clear package label is enough for direct box master lookup.
             </div>
           )}
         </section>

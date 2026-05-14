@@ -3,6 +3,7 @@ from uuid import uuid4
 
 from utils.config import (
     BIGQUERY_ANALYSIS_RESULTS_TABLE,
+    BIGQUERY_BOX_MASTER_TABLE,
     BIGQUERY_DATASET,
     BIGQUERY_INVENTORY_MAP_TABLE,
     BIGQUERY_RACK_MASTER_TABLE,
@@ -127,4 +128,41 @@ def fetch_rack_master(limit: int = 200) -> list[dict]:
         return [dict(row) for row in client.query(query).result()]
     except Exception as exc:
         print(f"BigQuery rack master read skipped: {exc}")
+        return []
+
+
+def fetch_box_master(limit: int = 100) -> list[dict]:
+    client = _bigquery_client()
+    if not client:
+        return []
+
+    safe_limit = max(1, min(int(limit), 500))
+    query = f"""
+        SELECT
+            box_id,
+            item_id,
+            item_name,
+            box_description,
+            expected_zone,
+            expected_rack,
+            length_cm,
+            width_cm,
+            height_cm,
+            weight_kg,
+            color,
+            package_type,
+            visual_description,
+            sample_image_gcs_uri,
+            responsible_contact_id,
+            risk_level,
+            CAST(last_updated AS STRING) AS last_updated
+        FROM `{_table(BIGQUERY_BOX_MASTER_TABLE)}`
+        ORDER BY box_id
+        LIMIT {safe_limit}
+    """
+
+    try:
+        return [dict(row) for row in client.query(query).result()]
+    except Exception as exc:
+        print(f"BigQuery box master read skipped: {exc}")
         return []
