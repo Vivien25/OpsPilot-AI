@@ -149,7 +149,6 @@ def fetch_box_master(limit: int = 100) -> list[dict]:
             width_cm,
             height_cm,
             weight_kg,
-            color,
             package_type,
             visual_description,
             sample_image_gcs_uri,

@@ -18,9 +18,8 @@ FALLBACK_BOXES = [
         "width_cm": 40.0,
         "height_cm": 40.0,
         "weight_kg": 18.5,
-        "color": "blue",
         "package_type": "drum box",
-        "visual_description": "blue chemical box with hazard sticker",
+        "visual_description": "chemical drum box with hazard sticker and sealed handling label",
         "sample_image_gcs_uri": "gs://opspilot-box-samples/chem-102.jpg",
         "responsible_contact_id": "C-101",
         "risk_level": "High",
@@ -53,7 +52,6 @@ def _best_visual_matches(boxes: list[dict], vision_result: dict, limit: int = 3)
         " ".join(
             str(value)
             for value in [
-                vision_result.get("color"),
                 vision_result.get("package_type"),
                 vision_result.get("visual_description"),
             ]
@@ -67,7 +65,6 @@ def _best_visual_matches(boxes: list[dict], vision_result: dict, limit: int = 3)
             " ".join(
                 str(value)
                 for value in [
-                    box.get("color"),
                     box.get("package_type"),
                     box.get("visual_description"),
                     box.get("box_description"),
