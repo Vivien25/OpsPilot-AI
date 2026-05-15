@@ -192,3 +192,81 @@ Return ONLY valid JSON in this exact shape:
             "visual_description": None,
             "vision_confidence": None,
         }
+
+
+def analyze_damage_image(image_bytes: bytes, mime_type: str) -> dict:
+    prompt = """
+You are an industrial damage ticket vision extractor.
+
+Extract only observable facts from the damaged warehouse item photo.
+Do not recommend an action.
+
+Return ONLY valid JSON in this exact shape:
+
+{
+  "item_id": "item id such as CHEM-102, or null",
+  "item_type": "Hazardous Chemical, Finished Product, Production Material, Packaging Supply, Maintenance Spare Part, or null",
+  "damage_type": "leakage, crushed package, puncture, wet packaging, broken seal, corrosion, missing component, or brief observed damage",
+  "severity": "High, Medium, Low, or Unknown",
+  "visible_label": "visible label text, or null",
+  "damage_summary": "one sentence describing what is damaged and visible evidence",
+  "confidence": 0.0
+}
+"""
+
+    try:
+        response = client.models.generate_content(
+            model=MODEL,
+            contents=[
+                {
+                    "role": "user",
+                    "parts": [
+                        {"text": prompt},
+                        {
+                            "inline_data": {
+                                "mime_type": mime_type,
+                                "data": image_bytes,
+                            }
+                        },
+                    ],
+                }
+            ],
+        )
+        text = response.text or ""
+        data = _extract_json(text)
+
+        if data:
+            return {
+                "vision_summary": data.get("damage_summary") or "No damage summary returned.",
+                "item_id": data.get("item_id"),
+                "item_type": data.get("item_type"),
+                "damage_type": data.get("damage_type"),
+                "severity": data.get("severity") or "Unknown",
+                "visible_label": data.get("visible_label"),
+                "damage_summary": data.get("damage_summary"),
+                "vision_confidence": data.get("confidence"),
+            }
+
+        return {
+            "vision_summary": text or "No vision summary returned.",
+            "item_id": None,
+            "item_type": None,
+            "damage_type": None,
+            "severity": "Unknown",
+            "visible_label": None,
+            "damage_summary": text or "No damage summary returned.",
+            "vision_confidence": None,
+        }
+
+    except Exception as e:
+        print("Gemini Damage Vision error:", e)
+        return {
+            "vision_summary": "Gemini Vision is temporarily unavailable. Please retry the upload in a moment.",
+            "item_id": None,
+            "item_type": None,
+            "damage_type": None,
+            "severity": "Unknown",
+            "visible_label": None,
+            "damage_summary": None,
+            "vision_confidence": None,
+        }
