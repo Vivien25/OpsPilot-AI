@@ -7,6 +7,7 @@ from utils.config import (
     BIGQUERY_DATASET,
     BIGQUERY_INVENTORY_MAP_TABLE,
     BIGQUERY_RACK_MASTER_TABLE,
+    BIGQUERY_WAREHOUSE_STATUS_TABLE,
     GCP_PROJECT_ID,
     USE_BIGQUERY_ANALYTICS,
 )
@@ -164,4 +165,32 @@ def fetch_box_master(limit: int = 100) -> list[dict]:
         return [dict(row) for row in client.query(query).result()]
     except Exception as exc:
         print(f"BigQuery box master read skipped: {exc}")
+        return []
+
+
+def fetch_warehouse_status(limit: int = 50) -> list[dict]:
+    client = _bigquery_client()
+    if not client:
+        return []
+
+    safe_limit = max(1, min(int(limit), 200))
+    query = f"""
+        SELECT
+            shipment_id,
+            shipment_name,
+            arrival_time,
+            status,
+            expected_zone,
+            expected_items,
+            map_refresh_required,
+            last_checked
+        FROM `{_table(BIGQUERY_WAREHOUSE_STATUS_TABLE)}`
+        ORDER BY arrival_time
+        LIMIT {safe_limit}
+    """
+
+    try:
+        return [dict(row) for row in client.query(query).result()]
+    except Exception as exc:
+        print(f"BigQuery warehouse status read skipped: {exc}")
         return []

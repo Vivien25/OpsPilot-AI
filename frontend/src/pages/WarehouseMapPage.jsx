@@ -1,15 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { productNavItems as navItems } from "../navigation";
 import "./UploadPage.css";
 import "./WarehouseMapPage.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
-
-const navItems = [
-  { id: "map", label: "Warehouse Map" },
-  { id: "analysis", label: "Package Recognition" },
-  { id: "incident", label: "Incident Ticket" },
-];
 
 const fallbackMap = {
   metrics: {

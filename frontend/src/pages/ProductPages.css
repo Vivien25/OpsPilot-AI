@@ -1,0 +1,237 @@
+.landing-page {
+  min-height: 100vh;
+  background: #0f1726;
+  color: #ffffff;
+}
+
+.landing-hero {
+  position: relative;
+  display: grid;
+  min-height: 78vh;
+  align-items: center;
+  overflow: hidden;
+  padding: 32px min(6vw, 88px);
+  background:
+    linear-gradient(90deg, rgba(15, 23, 38, 0.98), rgba(15, 23, 38, 0.78) 52%, rgba(15, 23, 38, 0.35)),
+    url("../assets/hero.png") right 10% center / min(44vw, 520px) no-repeat,
+    #0f1726;
+}
+
+.landing-nav {
+  position: absolute;
+  top: 24px;
+  left: min(6vw, 88px);
+  right: min(6vw, 88px);
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+}
+
+.landing-brand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-weight: 900;
+}
+
+.landing-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.text-btn,
+.solid-btn {
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-weight: 850;
+}
+
+.text-btn {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.solid-btn {
+  border: 0;
+  background: #ffffff;
+  color: #0f1726;
+}
+
+.hero-copy {
+  max-width: 720px;
+  padding-top: 64px;
+}
+
+.hero-copy h1 {
+  max-width: 760px;
+  font-size: clamp(48px, 7vw, 92px);
+}
+
+.hero-copy p {
+  max-width: 650px;
+  margin-top: 18px;
+  color: #c9d3e4;
+  font-size: 20px;
+  line-height: 1.55;
+}
+
+.hero-command {
+  display: flex;
+  gap: 10px;
+  margin-top: 28px;
+  flex-wrap: wrap;
+}
+
+.landing-proof {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.landing-proof div {
+  min-height: 132px;
+  padding: 24px;
+  background: #121a2a;
+}
+
+.landing-proof span {
+  color: #90a3bf;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.landing-proof strong {
+  display: block;
+  margin-top: 9px;
+  font-size: 24px;
+}
+
+.agent-flow {
+  display: grid;
+  gap: 12px;
+}
+
+.agent-row,
+.event-row,
+.ticket-row,
+.notification-row {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.agent-row {
+  grid-template-columns: minmax(180px, 0.4fr) 126px minmax(0, 1fr);
+  align-items: center;
+}
+
+.agent-status {
+  width: fit-content;
+  padding: 5px 9px;
+  border-radius: 7px;
+  background: #edf1f6;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.agent-status.completed {
+  background: #eaf8ef;
+  color: var(--green);
+}
+
+.agent-status.running {
+  background: #eef4ff;
+  color: var(--primary);
+}
+
+.agent-status.needs_attention {
+  background: #fff7df;
+  color: var(--yellow);
+}
+
+.orchestration-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 0.45fr);
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.shipment-list,
+.ticket-list,
+.notification-list {
+  display: grid;
+  gap: 12px;
+}
+
+.shipment-list article {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.shipment-list strong,
+.ticket-row strong,
+.notification-row strong {
+  display: block;
+  color: var(--text);
+}
+
+.shipment-list span,
+.ticket-row span,
+.notification-row span,
+.event-row span {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.event-row {
+  grid-template-columns: 92px minmax(160px, 0.35fr) minmax(0, 1fr);
+  align-items: start;
+}
+
+.evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 1100px) {
+  .landing-proof,
+  .orchestration-grid,
+  .evidence-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .agent-row,
+  .event-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .landing-hero {
+    min-height: 84vh;
+    padding: 24px;
+    background:
+      linear-gradient(180deg, rgba(15, 23, 38, 0.98), rgba(15, 23, 38, 0.78)),
+      url("../assets/hero.png") center bottom 28px / 260px no-repeat,
+      #0f1726;
+  }
+
+  .landing-nav {
+    position: static;
+  }
+}
