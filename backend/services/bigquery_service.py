@@ -6,6 +6,7 @@ from utils.config import (
     BIGQUERY_BOX_MASTER_TABLE,
     BIGQUERY_DATASET,
     BIGQUERY_INVENTORY_MAP_TABLE,
+    BIGQUERY_ORCHESTRATION_RUNS_TABLE,
     BIGQUERY_RACK_MASTER_TABLE,
     BIGQUERY_WAREHOUSE_STATUS_TABLE,
     GCP_PROJECT_ID,
@@ -60,6 +61,44 @@ def save_analysis_result(report: dict) -> str:
         raise RuntimeError(f"BigQuery analytics insert failed: {errors}")
 
     return analysis_id
+
+
+def save_orchestration_run(run: dict) -> str:
+    """
+    Persist Cloud Scheduler-triggered orchestration runs for audit/history.
+    This gives the midnight automation a durable side effect beyond returning JSON.
+    """
+    run_id = run.get("run_id") or str(uuid4())
+    timestamp = run.get("generated_at") or datetime.now(timezone.utc).isoformat()
+
+    client = _bigquery_client()
+    if not client:
+        return run_id
+
+    validation = run.get("validation") or {}
+    metrics = run.get("metrics") or {}
+    incidents = run.get("incidents") or []
+
+    row = {
+        "run_id": run_id,
+        "timestamp": timestamp,
+        "trigger_source": run.get("trigger_source") or "manual",
+        "system_status": run.get("system_status"),
+        "shipments_today": metrics.get("shipments_today"),
+        "agents_active": metrics.get("agents_active"),
+        "map_records": metrics.get("map_records"),
+        "open_incidents": metrics.get("open_incidents"),
+        "validation_status": validation.get("status"),
+        "missing_item_count": len(validation.get("missing_items") or []),
+        "wrong_zone_count": len(validation.get("wrong_zone_items") or []),
+        "incident_count": len(incidents),
+    }
+
+    errors = client.insert_rows_json(_table(BIGQUERY_ORCHESTRATION_RUNS_TABLE), [row])
+    if errors:
+        raise RuntimeError(f"BigQuery orchestration run insert failed: {errors}")
+
+    return run_id
 
 
 def fetch_inventory_map(limit: int = 100) -> list[dict]:

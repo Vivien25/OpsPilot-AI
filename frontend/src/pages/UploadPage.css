@@ -1,5 +1,5 @@
 :root {
-  --bg: #f4f6f9;
+  --bg: #020617;
   --surface: #ffffff;
   --surface-soft: #f8fafc;
   --text: #172033;
@@ -20,8 +20,9 @@
   grid-template-columns: 248px minmax(0, 1fr);
   min-height: 100vh;
   background:
-    linear-gradient(180deg, rgba(36, 91, 219, 0.08), rgba(36, 91, 219, 0) 320px),
-    var(--bg);
+    radial-gradient(circle at 54% 32%, rgba(37, 99, 235, 0.42), transparent 34%),
+    radial-gradient(circle at 54% 78%, rgba(14, 165, 233, 0.34), transparent 42%),
+    linear-gradient(180deg, #020617 0%, #061129 46%, #0b3b83 100%);
   color: var(--text);
 }
 
@@ -30,7 +31,7 @@
   top: 0;
   height: 100vh;
   padding: 24px 18px;
-  background: #121a2a;
+  background: rgba(2, 6, 23, 0.92);
   color: #ffffff;
 }
 
@@ -100,6 +101,14 @@
   gap: 18px;
   align-items: flex-start;
   margin-bottom: 20px;
+}
+
+.topbar h1 {
+  color: #f8fafc;
+}
+
+.topbar .eyebrow {
+  color: #38bdf8;
 }
 
 .eyebrow {

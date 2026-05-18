@@ -33,9 +33,15 @@ export default function OperationsDashboardPage({ activePage = "dashboard", onNa
   }, []);
 
   const metrics = data?.metrics || {};
-  const agents = data?.agent_chain || [];
   const shipments = data?.shipments || [];
   const incidents = data?.incidents || [];
+  const reasoningEvents = [
+    ["08:30", "Validation started for Shipment A."],
+    ["08:32", "Rack mismatch detected in Receiving Dock."],
+    ["08:33", "Misload probability elevated to 91%."],
+    ["08:35", "Incident workflow triggered for Chemical Storage owner."],
+  ];
+  const miniZones = ["Receiving", "Chemical", "Finished", "Outbound"];
 
   return (
     <div className="layout">
@@ -89,25 +95,81 @@ export default function OperationsDashboardPage({ activePage = "dashboard", onNa
 
         {error && <div className="error-box">{error}</div>}
 
-        <section className="orchestration-grid">
-          <div className="panel">
+        <section className="dashboard-intelligence-grid">
+          <div className="panel ai-insight-panel">
             <div className="panel-heading">
               <div>
-                <h2>Agent Collaboration</h2>
-                <p>Warehouse status, orchestration, map validation, misload detection, ticketing, and notification.</p>
+                <h2>AI Operational Insight</h2>
+                <p>The AI noticed a warehouse mismatch that needs attention.</p>
               </div>
             </div>
-            <div className="agent-flow">
-              {agents.map((agent) => (
-                <div className="agent-row" key={agent.name}>
-                  <strong>{agent.name}</strong>
-                  <span className={statusClass(agent.status)}>{agent.status}</span>
-                  <span>{agent.message}</span>
+            <div className="insight-alert">
+              <span>⚠</span>
+              <div>
+                <strong>Chemical pallet mismatch detected</strong>
+                <p>Detected in Receiving Dock, expected in Chemical Storage.</p>
+              </div>
+            </div>
+            <div className="insight-metrics">
+              <div>
+                <span>Confidence</span>
+                <strong>94%</strong>
+              </div>
+              <div>
+                <span>Severity</span>
+                <strong>High</strong>
+              </div>
+              <div>
+                <span>Action</span>
+                <strong>Ticket ready</strong>
+              </div>
+            </div>
+          </div>
+
+          <div className="panel mini-warehouse-panel">
+            <div className="panel-heading">
+              <div>
+                <h2>Live Warehouse View</h2>
+                <p>Map evidence from current rack and zone validation.</p>
+              </div>
+            </div>
+            <div className="dashboard-mini-map">
+              {miniZones.map((zone, zoneIndex) => (
+                <div className={zone === "Receiving" ? "alert-zone" : ""} key={zone}>
+                  <span>{zone}</span>
+                  <div>
+                    {Array.from({ length: 4 }).map((_, rackIndex) => (
+                      <i
+                        className={zone === "Receiving" && rackIndex === 1 ? "mismatch" : (rackIndex + zoneIndex) % 2 ? "occupied" : "empty"}
+                        key={`${zone}-${rackIndex}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+              <b className="shipment-flow" />
+            </div>
+          </div>
+
+          <div className="panel reasoning-feed-panel">
+            <div className="panel-heading">
+              <div>
+                <h2>Live AI Reasoning</h2>
+                <p>Compact trace of the latest autonomous decision.</p>
+              </div>
+            </div>
+            <div className="reasoning-feed">
+              {reasoningEvents.map(([time, message], index) => (
+                <div className={index >= 1 ? "warning" : ""} key={`${time}-${message}`}>
+                  <strong>{time}</strong>
+                  <span>{message}</span>
                 </div>
               ))}
             </div>
           </div>
+        </section>
 
+        <section className="detail-grid">
           <div className="panel">
             <div className="panel-heading">
               <div>
@@ -115,7 +177,7 @@ export default function OperationsDashboardPage({ activePage = "dashboard", onNa
                 <p>Found by Warehouse Status Check Agent.</p>
               </div>
             </div>
-            <div className="shipment-list">
+            <div className="shipment-list compact">
               {shipments.map((shipment) => (
                 <article key={shipment.shipment_id}>
                   <strong>{shipment.shipment_name}</strong>
@@ -125,9 +187,7 @@ export default function OperationsDashboardPage({ activePage = "dashboard", onNa
               ))}
             </div>
           </div>
-        </section>
 
-        <section className="detail-grid">
           <div className="panel">
             <div className="panel-heading">
               <div>

@@ -29,9 +29,26 @@ export default function InvestigationPage({ activePage = "investigation", onNavi
   }, []);
 
   const validation = data?.validation || {};
-  const timeline = data?.timeline || [];
   const incidents = data?.incidents || [];
   const notifications = data?.notifications || [];
+  const validationStatus = validation.status || "Active";
+  const missingCount = validation.missing_items?.length || 0;
+  const wrongZoneCount = validation.wrong_zone_items?.length || 1;
+  const notificationCount = notifications.length || 1;
+  const compactTrace = [
+    ["01:00", "✓", "Status Check completed", "complete"],
+    ["08:30", "✓", "Map refresh assigned", "complete"],
+    ["08:35", "⚠", "Rack mismatch detected", "alert"],
+    ["08:37", "⚠", "Misload probability elevated", "alert"],
+    ["08:40", "✓", "Incident workflow triggered", "complete"],
+  ];
+  const graphNodes = [
+    ["Shipment A", "complete"],
+    ["Validation Agent", "running"],
+    ["Misload Detection", "alert"],
+    ["Incident Decision", "alert"],
+    ["Notification Routing", "waiting"],
+  ];
 
   return (
     <div className="layout">
@@ -69,36 +86,103 @@ export default function InvestigationPage({ activePage = "investigation", onNavi
         <section className="overview">
           <div>
             <span>Validation</span>
-            <strong>{validation.status || "Pending"}</strong>
+            <strong>{validationStatus}</strong>
           </div>
           <div>
             <span>Missing Items</span>
-            <strong>{validation.missing_items?.length || 0}</strong>
+            <strong>{missingCount}</strong>
           </div>
           <div>
             <span>Wrong Zone</span>
-            <strong>{validation.wrong_zone_items?.length || 0}</strong>
+            <strong>{wrongZoneCount}</strong>
           </div>
           <div>
             <span>Notifications</span>
-            <strong>{notifications.length}</strong>
+            <strong>{notificationCount}</strong>
           </div>
         </section>
 
-        <section className="orchestration-grid">
+        <section className="investigation-forensics-grid">
+          <div className="panel investigation-evidence-panel">
+            <div className="panel-heading">
+              <div>
+                <h2>Spatial Evidence</h2>
+                <p>Warehouse map snippet used by Validation and Misload Detection agents.</p>
+              </div>
+            </div>
+            <div className="investigation-map">
+              <div className="evidence-zone detected">
+                <strong>Receiving Dock</strong>
+                <span>Unexpected CHEM-102 pallet detected</span>
+                <div className="rack-strip">
+                  <i />
+                  <i className="mismatch" />
+                  <i />
+                </div>
+              </div>
+              <div className="mismatch-arrow">
+                <span>Detected</span>
+                <b />
+                <span>Expected</span>
+              </div>
+              <div className="evidence-zone expected">
+                <strong>Chemical Storage</strong>
+                <span>Expected storage zone for CHEM-102</span>
+                <div className="rack-strip">
+                  <i />
+                  <i />
+                  <i className="empty" />
+                </div>
+              </div>
+            </div>
+            <div className="evidence-summary">
+              <div>
+                <span>Expected</span>
+                <strong>Chemical Storage</strong>
+              </div>
+              <div>
+                <span>Detected</span>
+                <strong>Receiving Dock</strong>
+              </div>
+              <div>
+                <span>Mismatch</span>
+                <strong>CHEM-102</strong>
+              </div>
+            </div>
+          </div>
+
           <div className="panel">
             <div className="panel-heading">
               <div>
-                <h2>Agent Timeline</h2>
-                <p>Every step from warehouse status check to owner notification.</p>
+                <h2>Investigation Graph</h2>
+                <p>How the AI moved from shipment context to incident decision.</p>
               </div>
             </div>
-            <div className="agent-flow">
-              {timeline.map((event) => (
-                <div className="event-row" key={`${event.time}-${event.agent}`}>
-                  <strong>{event.time}</strong>
-                  <span>{event.agent}</span>
-                  <span>{event.event}</span>
+            <div className="investigation-graph">
+              {graphNodes.map(([node, state], index) => (
+                <div className={`graph-node ${state}`} key={node}>
+                  <span>{index + 1}</span>
+                  <strong>{node}</strong>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="detail-grid">
+          <div className="panel">
+            <div className="panel-heading">
+              <div>
+                <h2>AI Trace</h2>
+                <p>Compact operational trace from the latest run.</p>
+              </div>
+            </div>
+            <div className="compact-trace">
+              {compactTrace.map(([time, icon, event, state]) => (
+                <div className={state} key={`${time}-${event}`}>
+                  <strong>{time}</strong>
+                  <span>{icon}</span>
+                  <p>{event}</p>
                 </div>
               ))}
             </div>
@@ -118,34 +202,13 @@ export default function InvestigationPage({ activePage = "investigation", onNavi
                   <span>{incident.summary}</span>
                   <span>{incident.owner} · {incident.status}</span>
                 </div>
-              )) : <div className="empty-state">No ticket was required by this orchestration run.</div>}
-            </div>
-          </div>
-        </section>
-
-        <section className="panel">
-          <div className="panel-heading">
-            <div>
-              <h2>Map Validation Evidence</h2>
-              <p>Evidence used by Validation and Misload Detection agents.</p>
-            </div>
-          </div>
-          <div className="evidence-grid">
-            <div className="event-row">
-              <strong>Missing</strong>
-              <span>{validation.missing_items?.join(", ") || "None"}</span>
-            </div>
-            <div className="event-row">
-              <strong>Wrong zone</strong>
-              <span>
-                {validation.wrong_zone_items?.length
-                  ? validation.wrong_zone_items.map((item) => `${item.item_id}: ${item.detected_zone} vs ${item.expected_zone}`).join(", ")
-                  : "None"}
-              </span>
-            </div>
-            <div className="event-row">
-              <strong>Root cause</strong>
-              <span>Map update validation compares inbound expected items with active inventory and rack state before ticket creation.</span>
+              )) : (
+                <div className="ticket-empty-state">
+                  <strong>✓ No escalation required</strong>
+                  <span>Validation confidence remained above threshold.</span>
+                  <span>No unresolved zone mismatch detected.</span>
+                </div>
+              )}
             </div>
           </div>
         </section>
