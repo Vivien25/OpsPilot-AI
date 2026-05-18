@@ -16,6 +16,20 @@ if [[ -z "${SERVICE_URL:-}" ]]; then
     --format='value(status.url)')"
 fi
 
+if [[ -z "${SERVICE_URL:-}" ]]; then
+  SERVICE_URL="$(gcloud run services describe "${SERVICE_NAME}" \
+    --project="${PROJECT_ID}" \
+    --region="${REGION}" \
+    --format='value(status.address.url)')"
+fi
+
+if [[ -z "${SERVICE_URL:-}" ]]; then
+  echo "Could not resolve Cloud Run service URL for ${SERVICE_NAME} in ${REGION}." >&2
+  echo "Pass it manually, for example:" >&2
+  echo "SERVICE_URL=https://YOUR-SERVICE-URL.run.app SERVICE_NAME=${SERVICE_NAME} ./scripts/setup_cloud_scheduler.sh" >&2
+  exit 1
+fi
+
 SERVICE_ACCOUNT_EMAIL="${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
 
 gcloud services enable cloudscheduler.googleapis.com run.googleapis.com iam.googleapis.com \
