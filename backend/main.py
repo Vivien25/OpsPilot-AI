@@ -4,8 +4,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.health import router as health_router
 from api.orchestration import router as orchestration_router
 from api.warehouse_map import router as warehouse_map_router
+from observability.phoenix_setup import instrument_fastapi, setup_phoenix
 
+setup_phoenix()
 app = FastAPI(title="OpsPilot AI")
+instrument_fastapi(app)
 
 app.add_middleware(
     CORSMiddleware,

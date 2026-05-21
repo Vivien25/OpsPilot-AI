@@ -14,3 +14,11 @@ pillow==10.4.0            # image processing
 
 # MongoDB operational knowledge retrieval
 pymongo==4.8.0
+
+# AI observability client/exporter. Run the Phoenix server in a separate venv
+# to avoid conflicts with this app's FastAPI / Pydantic / Gemini versions.
+arize-phoenix-otel>=0.16.0
+openinference-instrumentation
+openinference-instrumentation-google-genai
+opentelemetry-instrumentation-fastapi
+opentelemetry-sdk

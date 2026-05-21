@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from uuid import uuid4
 
+from observability.tracing import set_span_attributes, start_span
 from utils.config import (
     BIGQUERY_ANALYSIS_RESULTS_TABLE,
     BIGQUERY_BOX_MASTER_TABLE,
@@ -130,7 +131,10 @@ def fetch_inventory_map(limit: int = 100) -> list[dict]:
     """
 
     try:
-        return [dict(row) for row in client.query(query).result()]
+        with start_span("bigquery_inventory_map_retrieval", {"retrieval.table": BIGQUERY_INVENTORY_MAP_TABLE}) as span:
+            rows = [dict(row) for row in client.query(query).result()]
+            set_span_attributes(span, {"retrieved.count": len(rows), "retrieval.limit": safe_limit})
+            return rows
     except Exception as exc:
         print(f"BigQuery inventory map read skipped: {exc}")
         return []
@@ -165,7 +169,10 @@ def fetch_rack_master(limit: int = 200) -> list[dict]:
     """
 
     try:
-        return [dict(row) for row in client.query(query).result()]
+        with start_span("bigquery_rack_master_retrieval", {"retrieval.table": BIGQUERY_RACK_MASTER_TABLE}) as span:
+            rows = [dict(row) for row in client.query(query).result()]
+            set_span_attributes(span, {"retrieved.count": len(rows), "retrieval.limit": safe_limit})
+            return rows
     except Exception as exc:
         print(f"BigQuery rack master read skipped: {exc}")
         return []
@@ -201,7 +208,10 @@ def fetch_box_master(limit: int = 100) -> list[dict]:
     """
 
     try:
-        return [dict(row) for row in client.query(query).result()]
+        with start_span("bigquery_box_master_retrieval", {"retrieval.table": BIGQUERY_BOX_MASTER_TABLE}) as span:
+            rows = [dict(row) for row in client.query(query).result()]
+            set_span_attributes(span, {"retrieved.count": len(rows), "retrieval.limit": safe_limit})
+            return rows
     except Exception as exc:
         print(f"BigQuery box master read skipped: {exc}")
         return []
@@ -229,7 +239,10 @@ def fetch_warehouse_status(limit: int = 50) -> list[dict]:
     """
 
     try:
-        return [dict(row) for row in client.query(query).result()]
+        with start_span("bigquery_warehouse_status_retrieval", {"retrieval.table": BIGQUERY_WAREHOUSE_STATUS_TABLE}) as span:
+            rows = [dict(row) for row in client.query(query).result()]
+            set_span_attributes(span, {"retrieved.count": len(rows), "retrieval.limit": safe_limit})
+            return rows
     except Exception as exc:
         print(f"BigQuery warehouse status read skipped: {exc}")
         return []

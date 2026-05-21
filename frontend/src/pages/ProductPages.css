@@ -726,6 +726,611 @@
   color: var(--yellow);
 }
 
+.dashboard-workflow-grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.82fr) minmax(420px, 1.3fr) minmax(300px, 0.92fr);
+  gap: 18px;
+  margin-bottom: 18px;
+  align-items: start;
+}
+
+.dashboard-stack {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+}
+
+.dashboard-stack > .panel {
+  grid-area: auto;
+}
+
+.dashboard-stack > .panel:first-child {
+  height: 452px;
+  overflow: auto;
+}
+
+.dashboard-stack > .panel:nth-child(2) {
+  height: 284px;
+  overflow: hidden;
+}
+
+.dashboard-stack > .panel:nth-child(2) .ticket-list,
+.dashboard-stack > .panel:nth-child(2) .shipment-list {
+  max-height: 178px;
+  overflow-y: auto;
+}
+
+.dashboard-workflow-grid > .panel {
+  padding: 14px;
+}
+
+.dashboard-workflow-grid .panel {
+  padding: 14px;
+}
+
+.dashboard-workflow-grid > .panel .panel-heading {
+  margin-bottom: 10px;
+}
+
+.dashboard-incident-summary {
+  grid-area: insight;
+  align-self: start;
+}
+
+.dashboard-incident-summary .panel-heading p,
+.collaboration-diagram-panel .panel-heading p,
+.workflow-timeline-panel .panel-heading p {
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.dashboard-incident-summary .insight-alert {
+  gap: 10px;
+  padding: 12px;
+}
+
+.dashboard-incident-summary .insight-alert > span {
+  width: 28px;
+  height: 28px;
+}
+
+.dashboard-incident-summary .insight-alert strong {
+  font-size: 15px;
+}
+
+.dashboard-incident-summary .insight-alert p {
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.dashboard-incident-summary .insight-metrics {
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.dashboard-incident-summary .insight-metrics div {
+  padding: 8px 10px;
+}
+
+.collaboration-diagram-panel {
+  grid-area: diagram;
+}
+
+.workflow-timeline-panel {
+  grid-area: timeline;
+  overflow: hidden;
+}
+
+.workflow-panel {
+  max-height: 640px;
+  overflow-y: auto;
+}
+
+.dashboard-workflow-grid .workflow-panel {
+  max-height: none;
+  overflow-y: auto;
+}
+
+.dashboard-workflow-grid .workflow-card {
+  padding: 8px 9px;
+}
+
+.dashboard-workflow-grid .workflow-card h3 {
+  margin-top: 5px;
+  font-size: 13px;
+}
+
+.dashboard-workflow-grid .workflow-card p {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.dashboard-workflow-grid .workflow-timeline article {
+  padding: 5px 0;
+}
+
+.dashboard-inbound-panel {
+  grid-area: inbound;
+}
+
+.dashboard-inbound-panel .shipment-list.compact {
+  grid-template-columns: 1fr;
+}
+
+.dashboard-validation-panel {
+  grid-area: validation;
+}
+
+.dashboard-incident-panel {
+  grid-area: incident;
+}
+
+.dashboard-incident-panel .empty-state {
+  min-height: 96px;
+}
+
+.workflow-timeline {
+  position: relative;
+  display: grid;
+  gap: 0;
+  padding-right: 4px;
+}
+
+.workflow-timeline::before {
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 82px;
+  width: 2px;
+  content: "";
+  background: linear-gradient(180deg, #b7eadf, #c9ddff, #f4b4aa);
+}
+
+.workflow-timeline article {
+  display: grid;
+  grid-template-columns: 68px 28px minmax(0, 1fr);
+  gap: 0;
+  align-items: start;
+  padding: 7px 0;
+}
+
+.workflow-timeline time {
+  padding-top: 12px;
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.workflow-marker {
+  position: relative;
+  z-index: 1;
+  width: 13px;
+  height: 13px;
+  margin: 13px auto 0;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgba(15, 159, 143, 0.13);
+}
+
+article.working .workflow-marker {
+  background: var(--primary);
+  box-shadow: 0 0 0 5px rgba(36, 91, 219, 0.14);
+  animation: activePulse 1.35s ease-in-out infinite;
+}
+
+article.alert .workflow-marker {
+  background: #ef4444;
+  box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.14);
+  animation: alertBlink 1.25s ease-in-out infinite;
+}
+
+article.queued .workflow-marker {
+  background: #facc15;
+  box-shadow: 0 0 0 5px rgba(250, 204, 21, 0.14);
+}
+
+article.waiting .workflow-marker {
+  background: #94a3b8;
+  box-shadow: 0 0 0 5px rgba(148, 163, 184, 0.12);
+}
+
+.workflow-card {
+  padding: 10px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.workflow-card > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.workflow-card strong {
+  color: var(--text);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.workflow-card h3 {
+  margin: 7px 0 0;
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.workflow-card p {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.workflow-status {
+  padding: 4px 8px;
+  border-radius: 7px;
+  background: #eaf8ef;
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.workflow-status.working {
+  background: #eef4ff;
+  color: var(--primary);
+}
+
+.workflow-status.alert {
+  background: #fff1ef;
+  color: var(--red);
+}
+
+.workflow-status.queued {
+  background: #fff7df;
+  color: var(--yellow);
+}
+
+.workflow-status.waiting {
+  background: #eef2f7;
+  color: #667085;
+}
+
+.agent-architecture-diagram {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 50% 12%, rgba(36, 91, 219, 0.1), transparent 28%),
+    #f8fafc;
+}
+
+.architecture-node {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  min-height: 56px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #ffffff;
+  text-align: center;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+}
+
+.architecture-node > span {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  margin-bottom: 3px;
+  place-items: center;
+  border-radius: 8px;
+  background: #eef2f7;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.architecture-node.done {
+  border-color: rgba(22, 136, 78, 0.32);
+}
+
+.architecture-node.done > span {
+  background: #e1f7ec;
+  color: var(--green);
+}
+
+.architecture-node.working {
+  border-color: rgba(36, 91, 219, 0.36);
+  box-shadow: 0 0 0 4px rgba(36, 91, 219, 0.08), 0 14px 32px rgba(15, 23, 42, 0.08);
+}
+
+.architecture-node.working > span {
+  background: #dce8ff;
+  color: var(--primary);
+  animation: activePulse 1.35s ease-in-out infinite;
+}
+
+.architecture-node.pending {
+  border-color: rgba(148, 163, 184, 0.35);
+}
+
+.architecture-node strong,
+.architecture-node small {
+  display: block;
+}
+
+.architecture-node strong {
+  color: var(--text);
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.architecture-node small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.18;
+}
+
+.architecture-node em {
+  margin-top: 4px;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: #eef2f7;
+  color: var(--muted);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.architecture-node.done em {
+  background: #eaf8ef;
+  color: var(--green);
+}
+
+.architecture-node.working em {
+  background: #eef4ff;
+  color: var(--primary);
+}
+
+.orchestrator-node {
+  width: min(240px, 100%);
+  margin: 0 auto;
+}
+
+.orchestrator-node::after {
+  position: absolute;
+  bottom: -11px;
+  left: 50%;
+  width: 2px;
+  height: 10px;
+  content: "";
+  background: #aab8cc;
+}
+
+.architecture-branch-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.architecture-branch-grid::before {
+  position: absolute;
+  top: 0;
+  right: 16.5%;
+  left: 16.5%;
+  height: 2px;
+  content: "";
+  background: #aab8cc;
+}
+
+.architecture-branch-grid .architecture-node::before {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  width: 2px;
+  height: 8px;
+  content: "";
+  background: #aab8cc;
+}
+
+.diagram-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-top: auto;
+}
+
+.investigation-workflow-panel {
+  grid-column: 1 / -1;
+}
+
+.diagram-legend span {
+  position: relative;
+  padding: 4px 8px 4px 20px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.diagram-legend span::before {
+  position: absolute;
+  top: 50%;
+  left: 9px;
+  width: 8px;
+  height: 8px;
+  content: "";
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: #94a3b8;
+}
+
+.diagram-legend .done::before {
+  background: var(--green);
+}
+
+.diagram-legend .working::before {
+  background: var(--primary);
+}
+
+.diagram-legend .pending::before {
+  background: #94a3b8;
+}
+
+.live-agent-list {
+  display: grid;
+  gap: 9px;
+}
+
+.live-agent-list > div {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.live-agent-list > div > span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.live-agent-list > div.working > span {
+  background: var(--primary);
+  box-shadow: 0 0 0 5px rgba(36, 91, 219, 0.12);
+  animation: activePulse 1.35s ease-in-out infinite;
+}
+
+.live-agent-list > div.alert > span {
+  background: #ef4444;
+  box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.12);
+  animation: alertBlink 1.25s ease-in-out infinite;
+}
+
+.live-agent-list > div.queued > span {
+  background: #facc15;
+  box-shadow: 0 0 0 5px rgba(250, 204, 21, 0.12);
+}
+
+.live-agent-list > div.waiting > span {
+  background: #94a3b8;
+}
+
+.live-agent-list strong,
+.live-agent-list small {
+  display: block;
+}
+
+.live-agent-list strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.live-agent-list small {
+  margin-top: 2px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.live-agent-list em {
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.active-work-card {
+  margin-top: 12px;
+  padding: 13px;
+  border: 1px solid #f4b4aa;
+  border-radius: 8px;
+  background: #fff7f5;
+}
+
+.active-work-card span {
+  color: var(--red);
+  font-size: 12px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.active-work-card strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--text);
+}
+
+.active-work-card p {
+  margin-top: 5px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.agent-mini-map {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.agent-mini-map div {
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.agent-mini-map div.alert-zone {
+  border-color: #f4b4aa;
+  background: #fff7f5;
+}
+
+.agent-mini-map span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.agent-mini-map i {
+  display: block;
+  height: 12px;
+  border-radius: 999px;
+  background: #7cc997;
+}
+
+.agent-mini-map i.mismatch {
+  background: #ef4444;
+  animation: alertBlink 1.3s ease-in-out infinite;
+}
+
 .dashboard-intelligence-grid {
   display: grid;
   grid-template-columns: minmax(260px, 0.78fr) minmax(360px, 1.16fr) minmax(270px, 0.82fr);
@@ -1256,6 +1861,10 @@
   .investigation-forensics-grid,
   .orchestration-grid,
   .evidence-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-workflow-grid {
     grid-template-columns: 1fr;
   }
 

@@ -1,6 +1,7 @@
 import json
 import re
 
+from observability.tracing import set_span_attributes, start_span
 from services.gemini.gemini_client import client, MODEL
 
 
@@ -47,28 +48,46 @@ Return ONLY valid JSON in this exact shape:
 """
 
     try:
-        response = client.models.generate_content(
-            model=MODEL,
-            contents=[
-                {
-                    "role": "user",
-                    "parts": [
-                        {"text": prompt},
-                        {
-                            "inline_data": {
-                                "mime_type": mime_type,
-                                "data": image_bytes,
-                            }
-                        },
-                    ],
-                }
-            ],
-        )
+        with start_span(
+            "gemini_vision_agent",
+            {
+                "llm.model_name": MODEL,
+                "input.mime_type": mime_type,
+                "input.image_bytes": len(image_bytes),
+                "input.value": prompt,
+            },
+        ) as span:
+            response = client.models.generate_content(
+                model=MODEL,
+                contents=[
+                    {
+                        "role": "user",
+                        "parts": [
+                            {"text": prompt},
+                            {
+                                "inline_data": {
+                                    "mime_type": mime_type,
+                                    "data": image_bytes,
+                                }
+                            },
+                        ],
+                    }
+                ],
+            )
+            set_span_attributes(span, {"output.value": response.text or ""})
         text = response.text or ""
         data = _extract_json(text)
 
         if data:
             visual_evidence = data.get("visual_evidence") or "No visual evidence returned."
+            set_span_attributes(
+                span,
+                {
+                    "vision.item_id": data.get("item_id") or data.get("detected_item"),
+                    "vision.detected_zone": data.get("detected_zone"),
+                    "vision.confidence": data.get("confidence"),
+                },
+            )
             return {
                 "vision_summary": visual_evidence,
                 "item_id": data.get("item_id") or data.get("detected_item"),
@@ -134,27 +153,46 @@ Return ONLY valid JSON in this exact shape:
 """
 
     try:
-        response = client.models.generate_content(
-            model=MODEL,
-            contents=[
-                {
-                    "role": "user",
-                    "parts": [
-                        {"text": prompt},
-                        {
-                            "inline_data": {
-                                "mime_type": mime_type,
-                                "data": image_bytes,
-                            }
-                        },
-                    ],
-                }
-            ],
-        )
+        with start_span(
+            "gemini_package_vision_agent",
+            {
+                "llm.model_name": MODEL,
+                "input.mime_type": mime_type,
+                "input.image_bytes": len(image_bytes),
+                "input.value": prompt,
+            },
+        ) as span:
+            response = client.models.generate_content(
+                model=MODEL,
+                contents=[
+                    {
+                        "role": "user",
+                        "parts": [
+                            {"text": prompt},
+                            {
+                                "inline_data": {
+                                    "mime_type": mime_type,
+                                    "data": image_bytes,
+                                }
+                            },
+                        ],
+                    }
+                ],
+            )
+            set_span_attributes(span, {"output.value": response.text or ""})
         text = response.text or ""
         data = _extract_json(text)
 
         if data:
+            set_span_attributes(
+                span,
+                {
+                    "vision.box_id": data.get("box_id"),
+                    "vision.item_id": data.get("item_id"),
+                    "vision.label_found": bool(data.get("label_found") or data.get("box_id") or data.get("item_id")),
+                    "vision.confidence": data.get("confidence"),
+                },
+            )
             return {
                 "vision_summary": data.get("visual_description") or "No visual description returned.",
                 "box_id": data.get("box_id"),
@@ -215,27 +253,47 @@ Return ONLY valid JSON in this exact shape:
 """
 
     try:
-        response = client.models.generate_content(
-            model=MODEL,
-            contents=[
-                {
-                    "role": "user",
-                    "parts": [
-                        {"text": prompt},
-                        {
-                            "inline_data": {
-                                "mime_type": mime_type,
-                                "data": image_bytes,
-                            }
-                        },
-                    ],
-                }
-            ],
-        )
+        with start_span(
+            "gemini_damage_vision_agent",
+            {
+                "llm.model_name": MODEL,
+                "input.mime_type": mime_type,
+                "input.image_bytes": len(image_bytes),
+                "input.value": prompt,
+            },
+        ) as span:
+            response = client.models.generate_content(
+                model=MODEL,
+                contents=[
+                    {
+                        "role": "user",
+                        "parts": [
+                            {"text": prompt},
+                            {
+                                "inline_data": {
+                                    "mime_type": mime_type,
+                                    "data": image_bytes,
+                                }
+                            },
+                        ],
+                    }
+                ],
+            )
+            set_span_attributes(span, {"output.value": response.text or ""})
         text = response.text or ""
         data = _extract_json(text)
 
         if data:
+            set_span_attributes(
+                span,
+                {
+                    "vision.item_id": data.get("item_id"),
+                    "vision.item_type": data.get("item_type"),
+                    "vision.damage_type": data.get("damage_type"),
+                    "vision.severity": data.get("severity") or "Unknown",
+                    "vision.confidence": data.get("confidence"),
+                },
+            )
             return {
                 "vision_summary": data.get("damage_summary") or "No damage summary returned.",
                 "item_id": data.get("item_id"),

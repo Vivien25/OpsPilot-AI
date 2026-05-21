@@ -49,6 +49,64 @@ export default function InvestigationPage({ activePage = "investigation", onNavi
     ["Incident Decision", "alert"],
     ["Notification Routing", "waiting"],
   ];
+  const workflowEvents = [
+    {
+      time: "01:00 AM",
+      agent: "warehouse_status_agent",
+      task: "Check warehouse_status for 05/17 shipments",
+      status: "done",
+      report: "Found Shipment A at 08:00 AM and Shipment B at 03:00 PM.",
+    },
+    {
+      time: "01:03 AM",
+      agent: "orchestrator_agent",
+      task: "Create morning work plan",
+      status: "done",
+      report: "Assigned Map Agent to refresh rack and zone state before Shipment A arrives.",
+    },
+    {
+      time: "08:30 AM",
+      agent: "map_agent",
+      task: "Refresh warehouse map for Shipment A",
+      status: "done",
+      report: "Pulled inventory_map and rack_master into the current warehouse view.",
+    },
+    {
+      time: "08:34 AM",
+      agent: "orchestrator_agent",
+      task: "Route map evidence to Validation Agent",
+      status: "done",
+      report: "Sent expected zones, rack occupancy, and shipment contents to validation.",
+    },
+    {
+      time: "08:35 AM",
+      agent: "validation_agent",
+      task: "Validate CHEM-102 zone placement",
+      status: "working",
+      report: "Comparing expected Chemical Storage with detected Receiving Dock.",
+    },
+    {
+      time: "08:37 AM",
+      agent: "misload_detection_agent",
+      task: "Wait for validation output",
+      status: "waiting",
+      report: "Will score wrong-zone probability if validation confirms the mismatch.",
+    },
+    {
+      time: "08:40 AM",
+      agent: "incident_agent",
+      task: "Wait for misload decision",
+      status: "waiting",
+      report: "Will create a ticket after the misload decision is finalized.",
+    },
+    {
+      time: "08:41 AM",
+      agent: "notification_agent",
+      task: "Wait for incident ticket",
+      status: "waiting",
+      report: "Will route the ticket to the Chemical Storage Supervisor.",
+    },
+  ];
 
   return (
     <div className="layout">
@@ -170,6 +228,31 @@ export default function InvestigationPage({ activePage = "investigation", onNavi
         </section>
 
         <section className="detail-grid">
+          <div className="panel workflow-timeline-panel workflow-panel investigation-workflow-panel">
+            <div className="panel-heading">
+              <div>
+                <h2>Real-Time Agent Workflow</h2>
+                <p>Full execution trace for scheduled checks, handoffs, validation, and incident preparation.</p>
+              </div>
+            </div>
+            <div className="workflow-timeline">
+              {workflowEvents.map((event) => (
+                <article className={event.status} key={`${event.time}-${event.agent}-${event.task}`}>
+                  <time>{event.time}</time>
+                  <div className="workflow-marker" />
+                  <div className="workflow-card">
+                    <div>
+                      <strong>{event.agent}</strong>
+                      <span className={`workflow-status ${event.status}`}>{event.status}</span>
+                    </div>
+                    <h3>{event.task}</h3>
+                    <p>{event.report}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+
           <div className="panel">
             <div className="panel-heading">
               <div>

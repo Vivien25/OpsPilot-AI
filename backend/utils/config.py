@@ -17,3 +17,6 @@ BIGQUERY_ORCHESTRATION_RUNS_TABLE = os.getenv("BIGQUERY_ORCHESTRATION_RUNS_TABLE
 
 USE_GCS = os.getenv("USE_GCS", "true").lower() == "true"
 USE_BIGQUERY_ANALYTICS = os.getenv("USE_BIGQUERY_ANALYTICS", "true").lower() == "true"
+
+ENABLE_PHOENIX = os.getenv("ENABLE_PHOENIX", "false").lower() == "true"
+PHOENIX_LAUNCH_APP = os.getenv("PHOENIX_LAUNCH_APP", "false").lower() == "true"

@@ -35,13 +35,73 @@ export default function OperationsDashboardPage({ activePage = "dashboard", onNa
   const metrics = data?.metrics || {};
   const shipments = data?.shipments || [];
   const incidents = data?.incidents || [];
-  const reasoningEvents = [
-    ["08:30", "Validation started for Shipment A."],
-    ["08:32", "Rack mismatch detected in Receiving Dock."],
-    ["08:33", "Misload probability elevated to 91%."],
-    ["08:35", "Incident workflow triggered for Chemical Storage owner."],
+  const workflowEvents = [
+    {
+      time: "01:00 AM",
+      agent: "warehouse_status_agent",
+      task: "Check warehouse_status for 05/17 shipments",
+      status: "done",
+      report: "Found Shipment A at 08:00 AM and Shipment B at 03:00 PM.",
+    },
+    {
+      time: "01:03 AM",
+      agent: "orchestrator_agent",
+      task: "Create morning work plan",
+      status: "done",
+      report: "Assigned Map Agent to refresh rack and zone state before Shipment A arrives.",
+    },
+    {
+      time: "08:30 AM",
+      agent: "map_agent",
+      task: "Refresh warehouse map for Shipment A",
+      status: "done",
+      report: "Pulled inventory_map and rack_master into the current warehouse view.",
+    },
+    {
+      time: "08:34 AM",
+      agent: "orchestrator_agent",
+      task: "Route map evidence to Validation Agent",
+      status: "done",
+      report: "Sent expected zones, rack occupancy, and shipment contents to validation.",
+    },
+    {
+      time: "08:35 AM",
+      agent: "validation_agent",
+      task: "Validate CHEM-102 zone placement",
+      status: "working",
+      report: "Comparing expected Chemical Storage with detected Receiving Dock.",
+    },
+    {
+      time: "08:37 AM",
+      agent: "misload_detection_agent",
+      task: "Wait for validation output",
+      status: "waiting",
+      report: "Will score wrong-zone probability if validation confirms the mismatch.",
+    },
+    {
+      time: "08:40 AM",
+      agent: "incident_agent",
+      task: "Wait for misload decision",
+      status: "waiting",
+      report: "Will create a ticket after the misload decision is finalized.",
+    },
+    {
+      time: "08:41 AM",
+      agent: "notification_agent",
+      task: "Wait for incident ticket",
+      status: "waiting",
+      report: "Will route the ticket to the Chemical Storage Supervisor.",
+    },
   ];
-  const miniZones = ["Receiving", "Chemical", "Finished", "Outbound"];
+  const dashboardWorkflowEvents = workflowEvents.slice(0, 4);
+  const architectureNodes = [
+    { id: "warehouse_status_agent", label: "Warehouse Status", status: "done", summary: "Find inbound shipments" },
+    { id: "map_agent", label: "Map Agent", status: "done", summary: "Refresh warehouse map" },
+    { id: "validation_agent", label: "Validation", status: "working", summary: "Check expected zones" },
+    { id: "misload_detection_agent", label: "Misload Detection", status: "pending", summary: "Score wrong-zone risk" },
+    { id: "incident_agent", label: "Incident", status: "pending", summary: "Create ticket" },
+    { id: "notification_agent", label: "Notification", status: "pending", summary: "Route to owner" },
+  ];
 
   return (
     <div className="layout">
@@ -95,126 +155,145 @@ export default function OperationsDashboardPage({ activePage = "dashboard", onNa
 
         {error && <div className="error-box">{error}</div>}
 
-        <section className="dashboard-intelligence-grid">
-          <div className="panel ai-insight-panel">
-            <div className="panel-heading">
-              <div>
-                <h2>AI Operational Insight</h2>
-                <p>The AI noticed a warehouse mismatch that needs attention.</p>
+        <section className="dashboard-workflow-grid">
+          <div className="dashboard-stack">
+            <div className="panel ai-insight-panel dashboard-incident-summary">
+              <div className="panel-heading">
+                <div>
+                  <h2>AI Operational Insight</h2>
+                  <p>The system is validating a shipment-map mismatch in real time.</p>
+                </div>
+              </div>
+              <div className="insight-alert">
+                <span>!</span>
+                <div>
+                  <strong>Chemical pallet mismatch detected</strong>
+                  <p>Detected in Receiving Dock, expected in Chemical Storage.</p>
+                </div>
+              </div>
+              <div className="insight-metrics">
+                <div>
+                  <span>Confidence</span>
+                  <strong>94%</strong>
+                </div>
+                <div>
+                  <span>Active agent</span>
+                  <strong>Validation</strong>
+                </div>
+                <div>
+                  <span>Next handoff</span>
+                  <strong>Misload Detection</strong>
+                </div>
               </div>
             </div>
-            <div className="insight-alert">
-              <span>⚠</span>
-              <div>
-                <strong>Chemical pallet mismatch detected</strong>
-                <p>Detected in Receiving Dock, expected in Chemical Storage.</p>
+
+            <div className="panel dashboard-inbound-panel">
+              <div className="panel-heading">
+                <div>
+                  <h2>Inbound Shipments</h2>
+                  <p>Found by Warehouse Status Check Agent.</p>
+                </div>
               </div>
-            </div>
-            <div className="insight-metrics">
-              <div>
-                <span>Confidence</span>
-                <strong>94%</strong>
-              </div>
-              <div>
-                <span>Severity</span>
-                <strong>High</strong>
-              </div>
-              <div>
-                <span>Action</span>
-                <strong>Ticket ready</strong>
+              <div className="shipment-list compact">
+                {shipments.map((shipment) => (
+                  <article key={shipment.shipment_id}>
+                    <strong>{shipment.shipment_name}</strong>
+                    <span>{shipment.arrival_time} · {shipment.expected_zone}</span>
+                    <span>{shipment.expected_items?.join(", ")}</span>
+                  </article>
+                ))}
               </div>
             </div>
           </div>
 
-          <div className="panel mini-warehouse-panel">
-            <div className="panel-heading">
-              <div>
-                <h2>Live Warehouse View</h2>
-                <p>Map evidence from current rack and zone validation.</p>
+          <div className="dashboard-stack dashboard-stack-wide">
+            <div className="panel collaboration-diagram-panel">
+              <div className="panel-heading">
+                <div>
+                  <h2>Agent Collaboration Diagram</h2>
+                  <p>Autonomous agents coordinate through the Orchestrator Agent.</p>
+                </div>
+              </div>
+              <div className="agent-architecture-diagram" aria-label="Agent collaboration architecture">
+                <div className="architecture-node orchestrator-node done">
+                  <span>OP</span>
+                  <strong>Orchestrator Agent</strong>
+                  <small>Assigns work and manages handoffs</small>
+                  <em>done</em>
+                </div>
+                <div className="architecture-branch-grid">
+                  {architectureNodes.map((agent) => (
+                    <div className={`architecture-node ${agent.status}`} key={agent.id}>
+                      <span>{agent.label.slice(0, 2).toUpperCase()}</span>
+                      <strong>{agent.label}</strong>
+                      <small>{agent.summary}</small>
+                      <em>{agent.status}</em>
+                    </div>
+                  ))}
+                </div>
+                <div className="diagram-legend">
+                  <span className="done">Done</span>
+                  <span className="working">Working now</span>
+                  <span className="pending">Pending</span>
+                </div>
               </div>
             </div>
-            <div className="dashboard-mini-map">
-              {miniZones.map((zone, zoneIndex) => (
-                <div className={zone === "Receiving" ? "alert-zone" : ""} key={zone}>
-                  <span>{zone}</span>
-                  <div>
-                    {Array.from({ length: 4 }).map((_, rackIndex) => (
-                      <i
-                        className={zone === "Receiving" && rackIndex === 1 ? "mismatch" : (rackIndex + zoneIndex) % 2 ? "occupied" : "empty"}
-                        key={`${zone}-${rackIndex}`}
-                      />
-                    ))}
+
+            <div className="panel dashboard-validation-panel">
+              <div className="panel-heading">
+                <div>
+                  <h2>Validation Result</h2>
+                  <p>Map update status and wrong-zone evidence.</p>
+                </div>
+                <span className={statusClass(data?.validation?.status)}>{data?.validation?.status || "pending"}</span>
+              </div>
+              <p className="recommendation-copy">{data?.validation?.message || "Waiting for orchestration run."}</p>
+            </div>
+          </div>
+
+          <div className="dashboard-stack">
+            <div className="panel workflow-timeline-panel workflow-panel">
+              <div className="panel-heading">
+                <div>
+                  <h2>Live Workflow</h2>
+                  <p>Latest agent handoffs from the active orchestration run.</p>
+                </div>
+              </div>
+              <div className="workflow-timeline">
+                {dashboardWorkflowEvents.map((event) => (
+                  <article className={event.status} key={`${event.time}-${event.agent}-${event.task}`}>
+                    <time>{event.time}</time>
+                    <div className="workflow-marker" />
+                    <div className="workflow-card">
+                      <div>
+                        <strong>{event.agent}</strong>
+                        <span className={`workflow-status ${event.status}`}>{event.status}</span>
+                      </div>
+                      <h3>{event.task}</h3>
+                      <p>{event.report}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+
+            <div className="panel dashboard-incident-panel">
+              <div className="panel-heading">
+                <div>
+                  <h2>Incident Queue</h2>
+                  <p>Tickets created by the Incident Agent.</p>
+                </div>
+                <span className="panel-token">{incidents.length} open</span>
+              </div>
+              <div className="ticket-list">
+                {incidents.length ? incidents.map((incident) => (
+                  <div className="ticket-row" key={incident.ticket_id}>
+                    <strong>{incident.ticket_id}</strong>
+                    <span>{incident.summary}</span>
+                    <span>{incident.owner} · {incident.severity}</span>
                   </div>
-                </div>
-              ))}
-              <b className="shipment-flow" />
-            </div>
-          </div>
-
-          <div className="panel reasoning-feed-panel">
-            <div className="panel-heading">
-              <div>
-                <h2>Live AI Reasoning</h2>
-                <p>Compact trace of the latest autonomous decision.</p>
+                )) : <div className="empty-state">No active incident tickets.</div>}
               </div>
-            </div>
-            <div className="reasoning-feed">
-              {reasoningEvents.map(([time, message], index) => (
-                <div className={index >= 1 ? "warning" : ""} key={`${time}-${message}`}>
-                  <strong>{time}</strong>
-                  <span>{message}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="detail-grid">
-          <div className="panel">
-            <div className="panel-heading">
-              <div>
-                <h2>Inbound Shipments</h2>
-                <p>Found by Warehouse Status Check Agent.</p>
-              </div>
-            </div>
-            <div className="shipment-list compact">
-              {shipments.map((shipment) => (
-                <article key={shipment.shipment_id}>
-                  <strong>{shipment.shipment_name}</strong>
-                  <span>{shipment.arrival_time} · {shipment.expected_zone}</span>
-                  <span>{shipment.expected_items?.join(", ")}</span>
-                </article>
-              ))}
-            </div>
-          </div>
-
-          <div className="panel">
-            <div className="panel-heading">
-              <div>
-                <h2>Validation Result</h2>
-                <p>Map update status and wrong-zone evidence.</p>
-              </div>
-              <span className={statusClass(data?.validation?.status)}>{data?.validation?.status || "pending"}</span>
-            </div>
-            <p className="recommendation-copy">{data?.validation?.message || "Waiting for orchestration run."}</p>
-          </div>
-
-          <div className="panel">
-            <div className="panel-heading">
-              <div>
-                <h2>Incident Queue</h2>
-                <p>Tickets created by the Incident Agent.</p>
-              </div>
-              <span className="panel-token">{incidents.length} open</span>
-            </div>
-            <div className="ticket-list">
-              {incidents.length ? incidents.map((incident) => (
-                <div className="ticket-row" key={incident.ticket_id}>
-                  <strong>{incident.ticket_id}</strong>
-                  <span>{incident.summary}</span>
-                  <span>{incident.owner} · {incident.severity}</span>
-                </div>
-              )) : <div className="empty-state">No active incident tickets.</div>}
             </div>
           </div>
         </section>
