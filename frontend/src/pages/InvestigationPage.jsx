@@ -4,7 +4,7 @@ import { productNavItems as navItems } from "../navigation";
 import "./UploadPage.css";
 import "./ProductPages.css";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
+const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8001";
 
 export default function InvestigationPage({ activePage = "investigation", onNavigate = () => {} }) {
   const [data, setData] = useState(null);

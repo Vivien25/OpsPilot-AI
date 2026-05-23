@@ -232,6 +232,119 @@ Return ONLY valid JSON in this exact shape:
         }
 
 
+def compare_package_to_reference(
+    uploaded_image_bytes: bytes,
+    uploaded_mime_type: str,
+    reference_image_bytes: bytes,
+    reference_mime_type: str,
+    reference_item: dict,
+) -> dict:
+    prompt = f"""
+You are an industrial package validation agent.
+
+Compare the uploaded package photo with the reference product image and item-master data.
+Use the uploaded image as the inspected shipment item.
+Use the reference image and item-master fields as the expected product.
+
+Item-master data:
+- item_id: {reference_item.get("item_id")}
+- item_name: {reference_item.get("item_name")}
+- package_type: {reference_item.get("package_type")}
+- expected_zone: {reference_item.get("expected_zone")}
+- dimensions_cm: {reference_item.get("length_cm")} x {reference_item.get("width_cm")} x {reference_item.get("height_cm")}
+- visual_description: {reference_item.get("visual_description")}
+
+Return ONLY valid JSON in this exact shape:
+
+{{
+  "label_match": true,
+  "package_match": true,
+  "condition_ok": true,
+  "visual_match_score": 0.0,
+  "detected_label": "label text visible in uploaded image, or null",
+  "detected_package_type": "package type visible in uploaded image, or null",
+  "condition_summary": "brief condition summary",
+  "comparison_summary": "brief explanation of match or mismatch",
+  "confidence": 0.0
+}}
+"""
+
+    try:
+        with start_span(
+            "gcs_reference_image_comparison",
+            {
+                "llm.model_name": MODEL,
+                "reference.item_id": reference_item.get("item_id"),
+                "reference.image_bytes": len(reference_image_bytes),
+                "uploaded.image_bytes": len(uploaded_image_bytes),
+                "input.value": prompt,
+            },
+        ) as span:
+            response = client.models.generate_content(
+                model=MODEL,
+                contents=[
+                    {
+                        "role": "user",
+                        "parts": [
+                            {"text": prompt},
+                            {
+                                "inline_data": {
+                                    "mime_type": uploaded_mime_type,
+                                    "data": uploaded_image_bytes,
+                                }
+                            },
+                            {
+                                "inline_data": {
+                                    "mime_type": reference_mime_type,
+                                    "data": reference_image_bytes,
+                                }
+                            },
+                        ],
+                    }
+                ],
+            )
+            set_span_attributes(span, {"output.value": response.text or ""})
+
+        data = _extract_json(response.text or "")
+        if data:
+            set_span_attributes(
+                span,
+                {
+                    "comparison.label_match": bool(data.get("label_match")),
+                    "comparison.package_match": bool(data.get("package_match")),
+                    "comparison.condition_ok": bool(data.get("condition_ok")),
+                    "comparison.visual_match_score": data.get("visual_match_score"),
+                    "comparison.confidence": data.get("confidence"),
+                },
+            )
+            return data
+
+        return {
+            "label_match": False,
+            "package_match": False,
+            "condition_ok": False,
+            "visual_match_score": 0,
+            "detected_label": None,
+            "detected_package_type": None,
+            "condition_summary": "Reference comparison did not return structured output.",
+            "comparison_summary": response.text or "No comparison output returned.",
+            "confidence": 0,
+        }
+    except Exception as e:
+        print("Gemini reference comparison error:", e)
+        return {
+            "label_match": False,
+            "package_match": False,
+            "condition_ok": False,
+            "visual_match_score": 0,
+            "detected_label": None,
+            "detected_package_type": None,
+            "condition_summary": "Reference comparison unavailable.",
+            "comparison_summary": f"Reference comparison unavailable: {e}",
+            "confidence": 0,
+        }
+
+
 def analyze_damage_image(image_bytes: bytes, mime_type: str) -> dict:
     prompt = """
 You are an industrial damage ticket vision extractor.

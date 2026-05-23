@@ -4,6 +4,7 @@ import "./ProductPages.css";
 export default function LandingPage({ onNavigate = () => {} }) {
   const agents = [
     ["Status Check", "COMPLETE", "✓"],
+    ["Product Recognition", "RUNNING", "●"],
     ["Map Agent", "COMPLETE", "✓"],
     ["Validation", "RUNNING", "●"],
     ["Incident", "ALERT", "⚠"],
@@ -16,7 +17,7 @@ export default function LandingPage({ onNavigate = () => {} }) {
   ];
   const health = [
     ["Shipment Sync", "Healthy", "healthy"],
-    ["Map Validation", "Active", "warning"],
+    ["Product Intake", "Analyzing", "warning"],
     ["Incident Queue", "1 Incident", "incident"],
     ["Agent System", "Operational", "healthy"],
   ];
@@ -45,6 +46,9 @@ export default function LandingPage({ onNavigate = () => {} }) {
               </button>
               <button className="text-btn" onClick={() => onNavigate("map")} type="button">
                 Inspect Warehouse Map
+              </button>
+              <button className="text-btn" onClick={() => onNavigate("product-recognition")} type="button">
+                Product Recognition
               </button>
               <button className="text-btn" onClick={() => onNavigate("investigation")} type="button">
                 View Investigation

@@ -7,11 +7,14 @@ frontend/.env
 __pycache__/
 *.pyc
 .venv/
-backend/.phoenix-venv/
 
 # Node
 node_modules/
 frontend/node_modules/
+dist/
+frontend/dist/
+.vite/
+frontend/node_modules/.vite/
 
 # Mac
 .DS_Store

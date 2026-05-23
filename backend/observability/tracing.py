@@ -4,7 +4,7 @@ from contextlib import contextmanager
 @contextmanager
 def start_span(name: str, attributes: dict | None = None):
     """
-    Start an OpenTelemetry span when Phoenix/OpenTelemetry is installed.
+    Start an OpenTelemetry span when Arize AX/OpenTelemetry is installed.
     Falls back to a no-op context so local development still works before setup.
     """
     try:

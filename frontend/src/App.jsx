@@ -2,6 +2,7 @@ import { useState } from "react";
 import InvestigationPage from "./pages/InvestigationPage";
 import LandingPage from "./pages/LandingPage";
 import OperationsDashboardPage from "./pages/OperationsDashboardPage";
+import ProductRecognitionPage from "./pages/ProductRecognitionPage";
 import WarehouseMapPage from "./pages/WarehouseMapPage";
 
 function App() {
@@ -17,6 +18,10 @@ function App() {
 
   if (activePage === "investigation") {
     return <InvestigationPage activePage={activePage} onNavigate={setActivePage} />;
+  }
+
+  if (activePage === "product-recognition") {
+    return <ProductRecognitionPage activePage={activePage} onNavigate={setActivePage} />;
   }
 
   return <WarehouseMapPage activePage="map" onNavigate={setActivePage} />;

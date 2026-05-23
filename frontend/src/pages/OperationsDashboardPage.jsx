@@ -4,7 +4,7 @@ import { productNavItems as navItems } from "../navigation";
 import "./UploadPage.css";
 import "./ProductPages.css";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
+const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8001";
 
 function statusClass(status) {
   return `agent-status ${String(status || "idle").toLowerCase()}`;
@@ -65,6 +65,27 @@ export default function OperationsDashboardPage({ activePage = "dashboard", onNa
       report: "Sent expected zones, rack occupancy, and shipment contents to validation.",
     },
     {
+      time: "03:00 PM",
+      agent: "product_recognition_agent",
+      task: "Analyze Shipment B product photos",
+      status: "working",
+      report: "Comparing uploaded intake photos with GCS reference images and BigQuery item-master records.",
+    },
+    {
+      time: "03:01 PM",
+      agent: "item_master_rag_lookup",
+      task: "Retrieve BigQuery item and shipment context",
+      status: "working",
+      report: "Looking up box_master, warehouse_status, expected zone, package type, and reference image URI.",
+    },
+    {
+      time: "03:02 PM",
+      agent: "package_validation_agent",
+      task: "Validate package image against GCS sample",
+      status: "waiting",
+      report: "Will approve intake or hand off exceptions after image comparison completes.",
+    },
+    {
       time: "08:35 AM",
       agent: "validation_agent",
       task: "Validate CHEM-102 zone placement",
@@ -93,10 +114,12 @@ export default function OperationsDashboardPage({ activePage = "dashboard", onNa
       report: "Will route the ticket to the Chemical Storage Supervisor.",
     },
   ];
-  const dashboardWorkflowEvents = workflowEvents.slice(0, 4);
+  const dashboardWorkflowEvents = workflowEvents.filter((event) => ["01:00 AM", "01:03 AM", "03:00 PM", "03:01 PM", "03:02 PM"].includes(event.time));
   const architectureNodes = [
     { id: "warehouse_status_agent", label: "Warehouse Status", status: "done", summary: "Find inbound shipments" },
     { id: "map_agent", label: "Map Agent", status: "done", summary: "Refresh warehouse map" },
+    { id: "product_recognition_agent", label: "Product Recognition", status: "working", summary: "Check photo vs GCS sample" },
+    { id: "item_master_rag_lookup", label: "Item Master RAG", status: "working", summary: "Read BigQuery item data" },
     { id: "validation_agent", label: "Validation", status: "working", summary: "Check expected zones" },
     { id: "misload_detection_agent", label: "Misload Detection", status: "pending", summary: "Score wrong-zone risk" },
     { id: "incident_agent", label: "Incident", status: "pending", summary: "Create ticket" },
@@ -161,14 +184,14 @@ export default function OperationsDashboardPage({ activePage = "dashboard", onNa
               <div className="panel-heading">
                 <div>
                   <h2>AI Operational Insight</h2>
-                  <p>The system is validating a shipment-map mismatch in real time.</p>
+                  <p>The system is validating product intake photos and shipment-map evidence in real time.</p>
                 </div>
               </div>
               <div className="insight-alert">
                 <span>!</span>
                 <div>
-                  <strong>Chemical pallet mismatch detected</strong>
-                  <p>Detected in Receiving Dock, expected in Chemical Storage.</p>
+                  <strong>Product Recognition Agent active at intake</strong>
+                  <p>Uploaded photos are checked against BigQuery item data and GCS reference images before approval.</p>
                 </div>
               </div>
               <div className="insight-metrics">
@@ -178,11 +201,11 @@ export default function OperationsDashboardPage({ activePage = "dashboard", onNa
                 </div>
                 <div>
                   <span>Active agent</span>
-                  <strong>Validation</strong>
+                  <strong>Product Recognition</strong>
                 </div>
                 <div>
                   <span>Next handoff</span>
-                  <strong>Misload Detection</strong>
+                  <strong>Validation</strong>
                 </div>
               </div>
             </div>

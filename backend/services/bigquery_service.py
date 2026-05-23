@@ -217,6 +217,52 @@ def fetch_box_master(limit: int = 100) -> list[dict]:
         return []
 
 
+def fetch_box_master_item(item_id: str) -> dict | None:
+    client = _bigquery_client()
+    if not client or not item_id:
+        return None
+
+    query = f"""
+        SELECT
+            box_id,
+            item_id,
+            item_name,
+            box_description,
+            expected_zone,
+            expected_rack,
+            length_cm,
+            width_cm,
+            height_cm,
+            weight_kg,
+            package_type,
+            visual_description,
+            sample_image_gcs_uri,
+            responsible_contact_id,
+            risk_level,
+            CAST(last_updated AS STRING) AS last_updated
+        FROM `{_table(BIGQUERY_BOX_MASTER_TABLE)}`
+        WHERE item_id = @item_id OR box_id = @box_id
+        LIMIT 1
+    """
+
+    try:
+        from google.cloud import bigquery
+
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("item_id", "STRING", item_id),
+                bigquery.ScalarQueryParameter("box_id", "STRING", f"BOX-{item_id}"),
+            ]
+        )
+        with start_span("bigquery_item_master_lookup", {"retrieval.table": BIGQUERY_BOX_MASTER_TABLE, "item_id": item_id}) as span:
+            rows = [dict(row) for row in client.query(query, job_config=job_config).result()]
+            set_span_attributes(span, {"retrieved.count": len(rows)})
+            return rows[0] if rows else None
+    except Exception as exc:
+        print(f"BigQuery item master read skipped: {exc}")
+        return None
+
+
 def fetch_warehouse_status(limit: int = 50) -> list[dict]:
     client = _bigquery_client()
     if not client:
@@ -246,3 +292,41 @@ def fetch_warehouse_status(limit: int = 50) -> list[dict]:
     except Exception as exc:
         print(f"BigQuery warehouse status read skipped: {exc}")
         return []
+
+
+def fetch_shipment_status(shipment_id: str) -> dict | None:
+    client = _bigquery_client()
+    if not client or not shipment_id:
+        return None
+
+    query = f"""
+        SELECT
+            shipment_id,
+            shipment_name,
+            arrival_time,
+            status,
+            expected_zone,
+            expected_items,
+            map_refresh_required,
+            CAST(last_checked AS STRING) AS last_checked
+        FROM `{_table(BIGQUERY_WAREHOUSE_STATUS_TABLE)}`
+        WHERE shipment_id = @shipment_id
+        LIMIT 1
+    """
+
+    try:
+        from google.cloud import bigquery
+
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[bigquery.ScalarQueryParameter("shipment_id", "STRING", shipment_id)]
+        )
+        with start_span(
+            "bigquery_shipment_lookup",
+            {"retrieval.table": BIGQUERY_WAREHOUSE_STATUS_TABLE, "shipment_id": shipment_id},
+        ) as span:
+            rows = [dict(row) for row in client.query(query, job_config=job_config).result()]
+            set_span_attributes(span, {"retrieved.count": len(rows)})
+            return rows[0] if rows else None
+    except Exception as exc:
+        print(f"BigQuery shipment status read skipped: {exc}")
+        return None
