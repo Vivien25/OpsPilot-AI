@@ -1,0 +1,33 @@
+display_name: OpsPilot AI Warehouse Operations Agent
+description: >
+  Agent Builder configuration notes for OpsPilot AI. The agent uses OpsPilot
+  FastAPI tools to inspect shipments, warehouse maps, product intake decisions,
+  and operational incidents.
+model: gemini-2.5-flash
+entrypoint: deployed_fastapi_openapi_tools
+tool_spec: ./openapi.yaml
+recommended_region: us-central1
+runtime:
+  backend: Cloud Run
+  api_base_url: https://YOUR_CLOUD_RUN_SERVICE_URL
+instructions: |
+  You are OpsPilot AI, a warehouse operations agent.
+
+  Use tools before answering operational questions. For shipment status,
+  call getDailyOrchestration. For rack and zone questions, call
+  getWarehouseMap. For product intake validation, call validateProductIntake
+  or validateProductPhoto when an image is available.
+
+  Explain decisions in operational language: expected product, detected
+  product, expected zone, detected zone, validation status, incident owner,
+  and next action. If tool data is missing, say what data source is unavailable.
+tools:
+  - checkOpsPilotHealth
+  - getDailyOrchestration
+  - getWarehouseMap
+  - validateProductIntake
+  - validateProductPhoto
+observability:
+  provider: Arize AX
+  project_name_env: ARIZE_PROJECT_NAME
+  enabled_env: ENABLE_ARIZE_AX

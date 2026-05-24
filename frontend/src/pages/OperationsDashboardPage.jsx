@@ -4,10 +4,22 @@ import { productNavItems as navItems } from "../navigation";
 import "./UploadPage.css";
 import "./ProductPages.css";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8001";
+const API_BASES = [
+  import.meta.env.VITE_API_BASE,
+  "http://127.0.0.1:8001",
+  "http://127.0.0.1:8000",
+].filter(Boolean).filter((base, index, list) => list.indexOf(base) === index);
 
 function statusClass(status) {
   return `agent-status ${String(status || "idle").toLowerCase()}`;
+}
+
+function workflowStatus(status) {
+  const value = String(status || "").toLowerCase();
+  if (value === "completed") return "done";
+  if (value === "running" || value === "needs_attention") return "working";
+  if (value === "idle") return "waiting";
+  return value || "waiting";
 }
 
 export default function OperationsDashboardPage({ activePage = "dashboard", onNavigate = () => {} }) {
@@ -16,17 +28,23 @@ export default function OperationsDashboardPage({ activePage = "dashboard", onNa
 
   useEffect(() => {
     let isMounted = true;
-    axios
-      .get(`${API_BASE}/api/orchestration/daily`, { timeout: 8000 })
-      .then((response) => {
-        if (!isMounted) return;
-        setData(response.data);
-        setError("");
-      })
-      .catch((err) => {
-        console.error(err);
-        if (isMounted) setError("Orchestration data is unavailable. Confirm the backend is running.");
-      });
+    async function loadDailyOrchestration() {
+      const failures = [];
+      for (const baseUrl of API_BASES) {
+        try {
+          const response = await axios.get(`${baseUrl}/api/orchestration/daily`, { timeout: 12000 });
+          if (!isMounted) return;
+          setData(response.data);
+          setError("");
+          return;
+        } catch (err) {
+          failures.push({ baseUrl, message: err.message });
+        }
+      }
+      console.error("Unable to load orchestration data", failures);
+      if (isMounted) setError("Orchestration data is unavailable. Confirm the backend is running.");
+    }
+    loadDailyOrchestration();
     return () => {
       isMounted = false;
     };
@@ -35,95 +53,92 @@ export default function OperationsDashboardPage({ activePage = "dashboard", onNa
   const metrics = data?.metrics || {};
   const shipments = data?.shipments || [];
   const incidents = data?.incidents || [];
-  const workflowEvents = [
+  const productIntake = data?.product_intake || {};
+  const agentStatusByName = Object.fromEntries((data?.agent_chain || []).map((agent) => [agent.name, agent.status]));
+  const fallbackWorkflowEvents = [
     {
       time: "01:00 AM",
-      agent: "warehouse_status_agent",
+      agent: "Warehouse Status Check Agent",
       task: "Check warehouse_status for 05/17 shipments",
       status: "done",
       report: "Found Shipment A at 08:00 AM and Shipment B at 03:00 PM.",
     },
     {
       time: "01:03 AM",
-      agent: "orchestrator_agent",
-      task: "Create morning work plan",
+      agent: "Orchestrator Agent",
+      task: "Create product intake plan",
       status: "done",
-      report: "Assigned Map Agent to refresh rack and zone state before Shipment A arrives.",
-    },
-    {
-      time: "08:30 AM",
-      agent: "map_agent",
-      task: "Refresh warehouse map for Shipment A",
-      status: "done",
-      report: "Pulled inventory_map and rack_master into the current warehouse view.",
-    },
-    {
-      time: "08:34 AM",
-      agent: "orchestrator_agent",
-      task: "Route map evidence to Validation Agent",
-      status: "done",
-      report: "Sent expected zones, rack occupancy, and shipment contents to validation.",
+      report: "Prepared the 3:00 PM Shipment B intake workflow.",
     },
     {
       time: "03:00 PM",
-      agent: "product_recognition_agent",
-      task: "Analyze Shipment B product photos",
-      status: "working",
-      report: "Comparing uploaded intake photos with GCS reference images and BigQuery item-master records.",
-    },
-    {
-      time: "03:01 PM",
-      agent: "item_master_rag_lookup",
-      task: "Retrieve BigQuery item and shipment context",
-      status: "working",
-      report: "Looking up box_master, warehouse_status, expected zone, package type, and reference image URI.",
+      agent: "Warehouse Status Check Agent",
+      task: "Shipment B arrives",
+      status: "done",
+      report: "Inbound product intake checkpoint opened.",
     },
     {
       time: "03:02 PM",
-      agent: "package_validation_agent",
-      task: "Validate package image against GCS sample",
-      status: "waiting",
-      report: "Will approve intake or hand off exceptions after image comparison completes.",
+      agent: "Worker Upload",
+      task: "Upload product photo",
+      status: "done",
+      report: "Worker photo is ready for Product Recognition Agent.",
     },
     {
-      time: "08:35 AM",
-      agent: "validation_agent",
-      task: "Validate CHEM-102 zone placement",
-      status: "working",
-      report: "Comparing expected Chemical Storage with detected Receiving Dock.",
+      time: "03:03 PM",
+      agent: "Product Recognition Agent",
+      task: "Analyze product photo",
+      status: "done",
+      report: "Detected FG-220 from the uploaded image.",
     },
     {
-      time: "08:37 AM",
-      agent: "misload_detection_agent",
-      task: "Wait for validation output",
-      status: "waiting",
-      report: "Will score wrong-zone probability if validation confirms the mismatch.",
+      time: "03:04 PM",
+      agent: "Item Master RAG Agent",
+      task: "Retrieve item reference data",
+      status: "done",
+      report: "Checked label, package size, description, shipment info, and expected zone.",
     },
     {
-      time: "08:40 AM",
-      agent: "incident_agent",
-      task: "Wait for misload decision",
-      status: "waiting",
-      report: "Will create a ticket after the misload decision is finalized.",
+      time: "03:05 PM",
+      agent: "Validation Agent",
+      task: "Compare image result against RAG data",
+      status: "done",
+      report: "Validated product photo against item master and shipment reference data.",
     },
     {
-      time: "08:41 AM",
-      agent: "notification_agent",
-      task: "Wait for incident ticket",
-      status: "waiting",
-      report: "Will route the ticket to the Chemical Storage Supervisor.",
+      time: "03:06 PM",
+      agent: "Incident Agent",
+      task: "Resolve intake decision",
+      status: "done",
+      report: "Approved product intake.",
+    },
+    {
+      time: "03:07 PM",
+      agent: "Contact / Notification Agent",
+      task: "Route exception only if needed",
+      status: "done",
+      report: "No notification required.",
     },
   ];
-  const dashboardWorkflowEvents = workflowEvents.filter((event) => ["01:00 AM", "01:03 AM", "03:00 PM", "03:01 PM", "03:02 PM"].includes(event.time));
+  const workflowEvents = (data?.timeline?.length ? data.timeline : fallbackWorkflowEvents).map((event) => ({
+    time: event.time,
+    agent: event.agent,
+    task: event.task || event.event,
+    report: event.report || event.event,
+    status: event.status
+      || (event.agent === "Worker Upload" ? "done" : "")
+      || (productIntake.approved && ["Incident Agent", "Contact / Notification Agent"].includes(event.agent) ? "done" : "")
+      || workflowStatus(agentStatusByName[event.agent])
+      || "done",
+  }));
+  const dashboardWorkflowEvents = workflowEvents.slice(-6);
   const architectureNodes = [
     { id: "warehouse_status_agent", label: "Warehouse Status", status: "done", summary: "Find inbound shipments" },
-    { id: "map_agent", label: "Map Agent", status: "done", summary: "Refresh warehouse map" },
-    { id: "product_recognition_agent", label: "Product Recognition", status: "working", summary: "Check photo vs GCS sample" },
-    { id: "item_master_rag_lookup", label: "Item Master RAG", status: "working", summary: "Read BigQuery item data" },
-    { id: "validation_agent", label: "Validation", status: "working", summary: "Check expected zones" },
-    { id: "misload_detection_agent", label: "Misload Detection", status: "pending", summary: "Score wrong-zone risk" },
-    { id: "incident_agent", label: "Incident", status: "pending", summary: "Create ticket" },
-    { id: "notification_agent", label: "Notification", status: "pending", summary: "Route to owner" },
+    { id: "product_recognition_agent", label: "Product Recognition", status: "done", summary: "Analyze worker photo" },
+    { id: "item_master_rag_agent", label: "Item Master RAG", status: "done", summary: "Retrieve reference data" },
+    { id: "validation_agent", label: "Validation", status: "done", summary: "Compare photo vs RAG" },
+    { id: "incident_agent", label: "Incident", status: productIntake.approved === false ? "done" : "pending", summary: "Create ticket if abnormal" },
+    { id: "notification_agent", label: "Notification", status: productIntake.approved === false ? "done" : "pending", summary: "Route to owner" },
   ];
 
   return (

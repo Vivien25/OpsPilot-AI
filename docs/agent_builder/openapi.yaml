@@ -1,0 +1,109 @@
+openapi: 3.0.3
+info:
+  title: OpsPilot AI Agent Builder Tools
+  version: 0.1.0
+  description: OpenAPI tool schema for connecting Vertex AI Agent Builder to OpsPilot AI.
+servers:
+  - url: https://YOUR_CLOUD_RUN_SERVICE_URL
+    description: Replace with the deployed OpsPilot FastAPI Cloud Run URL.
+paths:
+  /health:
+    get:
+      operationId: checkOpsPilotHealth
+      summary: Check OpsPilot backend health.
+      responses:
+        "200":
+          description: Backend health status.
+          content:
+            application/json:
+              schema:
+                type: object
+  /api/orchestration/daily:
+    get:
+      operationId: getDailyOrchestration
+      summary: Get the current OpsPilot daily orchestration run.
+      responses:
+        "200":
+          description: Shipments, agents, validation, incidents, and timeline.
+          content:
+            application/json:
+              schema:
+                type: object
+  /api/map:
+    get:
+      operationId: getWarehouseMap
+      summary: Get the current warehouse map and inventory status.
+      responses:
+        "200":
+          description: Warehouse map, racks, zones, inventory, and metrics.
+          content:
+            application/json:
+              schema:
+                type: object
+  /api/product-recognition:
+    post:
+      operationId: validateProductIntake
+      summary: Validate a product intake record.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                item_id:
+                  type: string
+                  example: FG-101
+                shipment_id:
+                  type: string
+                  example: SHIP-B-1500
+                detected_label:
+                  type: string
+                  example: FG-101 Retail Case FINISHED PRODUCT
+                detected_package_size:
+                  type: string
+                  example: shipping carton
+                detected_condition:
+                  type: string
+                  example: No visible abnormal signs
+                detected_zone:
+                  type: string
+                  example: Unknown
+              required:
+                - item_id
+      responses:
+        "200":
+          description: Product intake approval or exception decision.
+          content:
+            application/json:
+              schema:
+                type: object
+  /api/product-recognition/image:
+    post:
+      operationId: validateProductPhoto
+      summary: Validate an uploaded product photo against BigQuery item data and GCS reference images.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+                expected_item_id:
+                  type: string
+                  example: FG-101
+                shipment_id:
+                  type: string
+                  example: SHIP-B-1500
+              required:
+                - image
+      responses:
+        "200":
+          description: Product photo validation result.
+          content:
+            application/json:
+              schema:
+                type: object
