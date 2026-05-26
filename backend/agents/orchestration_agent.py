@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from observability.tracing import set_span_attributes, start_span
+from observability.tracing import set_span_attributes, set_span_io, start_span
 from services.bigquery_service import (
     fetch_box_master_item,
     fetch_inventory_map,
@@ -126,8 +126,17 @@ def _find_intake_shipment(shipments: list[dict]) -> dict:
 
 
 def run_daily_orchestration() -> dict:
-    with start_span("opspilot.daily_orchestration") as root_span:
-        with start_span("warehouse_status_agent") as span:
+    with start_span(
+        "opspilot.daily_orchestration",
+        kind="CHAIN",
+        input_value="Run daily warehouse orchestration: check shipments, refresh map, validate product intake, and route incidents.",
+        root=True,
+    ) as root_span:
+        with start_span(
+            "warehouse_status_agent",
+            kind="AGENT",
+            input_value="Check warehouse_status for today's inbound shipments.",
+        ) as span:
             shipments = [_format_shipment(row) for row in fetch_warehouse_status()] or FALLBACK_SHIPMENTS
             set_span_attributes(
                 span,
@@ -138,8 +147,13 @@ def run_daily_orchestration() -> dict:
                     "shipment.ids": [shipment.get("shipment_id") for shipment in shipments],
                 },
             )
+            set_span_io(span, output_value=f"Found {len(shipments)} inbound shipments today.")
 
-        with start_span("map_agent") as span:
+        with start_span(
+            "map_agent",
+            kind="AGENT",
+            input_value="Refresh warehouse map from inventory_map and rack_master.",
+        ) as span:
             inventory = fetch_inventory_map(200)
             racks = fetch_rack_master(200)
             set_span_attributes(
@@ -151,6 +165,7 @@ def run_daily_orchestration() -> dict:
                     "rack.record_count": len(racks),
                 },
             )
+            set_span_io(span, output_value=f"Refreshed map with {len(inventory)} inventory records and {len(racks)} racks.")
 
         intake_shipment = _find_intake_shipment(shipments)
         product_photo = {
@@ -158,7 +173,11 @@ def run_daily_orchestration() -> dict:
             "shipment_id": intake_shipment.get("shipment_id") or SIMULATED_PRODUCT_PHOTO["shipment_id"],
         }
 
-        with start_span("product_recognition_agent") as span:
+        with start_span(
+            "product_recognition_agent",
+            kind="AGENT",
+            input_value=f"Analyze worker product photo for {product_photo['shipment_id']}.",
+        ) as span:
             set_span_attributes(
                 span,
                 {
@@ -176,8 +195,19 @@ def run_daily_orchestration() -> dict:
                     "vision.confidence": product_photo["confidence"],
                 },
             )
+            set_span_io(
+                span,
+                output_value=(
+                    f"Detected {product_photo['detected_item_id']} as {product_photo['detected_package_type']} "
+                    f"in {product_photo['detected_zone']} with {int(product_photo['confidence'] * 100)}% confidence."
+                ),
+            )
 
-        with start_span("item_master_rag_retrieval") as span:
+        with start_span(
+            "item_master_rag_retrieval",
+            kind="RETRIEVER",
+            input_value=f"Retrieve item master, package, shipment, and zone reference data for {product_photo['detected_item_id']}.",
+        ) as span:
             item_master = fetch_box_master_item(product_photo["detected_item_id"]) or FALLBACK_BOX_MASTER
             shipment_context = fetch_shipment_status(product_photo["shipment_id"]) or intake_shipment
             set_span_attributes(
@@ -194,6 +224,13 @@ def run_daily_orchestration() -> dict:
                     "retrieved.count": 1 if item_master else 0,
                 },
             )
+            set_span_io(
+                span,
+                output_value=(
+                    f"Retrieved {item_master.get('item_id')} expected in {item_master.get('expected_zone')} "
+                    f"as {item_master.get('package_type')} sized {_size_text(item_master)}."
+                ),
+            )
 
         expected_items = {
             item_id
@@ -202,7 +239,11 @@ def run_daily_orchestration() -> dict:
         }
         inventory_by_id = {row.get("item_id"): row for row in inventory if row.get("item_id")}
 
-        with start_span("validation_agent") as span:
+        with start_span(
+            "validation_agent",
+            kind="AGENT",
+            input_value="Compare product photo signals with item master, shipment context, and warehouse map evidence.",
+        ) as span:
             missing_items = sorted(item_id for item_id in expected_items if item_id not in inventory_by_id)
 
             wrong_zone_items = []
@@ -258,8 +299,21 @@ def run_daily_orchestration() -> dict:
                     "hallucination_risk": "low",
                 },
             )
+            set_span_io(
+                span,
+                output_value=(
+                    "Product intake approved."
+                    if validation_status == "completed"
+                    else f"Validation needs attention: {len(missing_items)} missing, {len(wrong_zone_items)} wrong-zone, "
+                    f"{len(product_intake_issues)} product-intake issues."
+                ),
+            )
 
-        with start_span("misload_detection_agent") as span:
+        with start_span(
+            "misload_detection_agent",
+            kind="AGENT",
+            input_value="Score wrong-zone risk from validation findings.",
+        ) as span:
             set_span_attributes(
                 span,
                 {
@@ -268,6 +322,14 @@ def run_daily_orchestration() -> dict:
                     "misload.candidate_count": len(wrong_zone_items),
                     "misload.probability": 0.0 if not wrong_zone_items else 0.91,
                 },
+            )
+            set_span_io(
+                span,
+                output_value=(
+                    "No wrong-zone candidates found."
+                    if not wrong_zone_items
+                    else f"Detected {len(wrong_zone_items)} wrong-zone candidates."
+                ),
             )
 
         active_incidents = []
@@ -292,7 +354,11 @@ def run_daily_orchestration() -> dict:
                 }
             )
 
-        with start_span("incident_agent") as span:
+        with start_span(
+            "incident_agent",
+            kind="AGENT",
+            input_value="Create tickets for unresolved product intake or map validation findings.",
+        ) as span:
             set_span_attributes(
                 span,
                 {
@@ -302,8 +368,20 @@ def run_daily_orchestration() -> dict:
                     "incident_confidence": 0.95 if active_incidents else 0.98,
                 },
             )
+            set_span_io(
+                span,
+                output_value=(
+                    "No ticket required."
+                    if not active_incidents
+                    else f"Created {len(active_incidents)} incident ticket(s)."
+                ),
+            )
 
-        with start_span("contact_notification_agent") as span:
+        with start_span(
+            "contact_notification_agent",
+            kind="AGENT",
+            input_value="Route active incident tickets to responsible warehouse contacts.",
+        ) as span:
             set_span_attributes(
                 span,
                 {
@@ -313,6 +391,14 @@ def run_daily_orchestration() -> dict:
                     "notification.owners": [incident["owner"] for incident in active_incidents],
                 },
             )
+            set_span_io(
+                span,
+                output_value=(
+                    "No notification required."
+                    if not active_incidents
+                    else f"Sent notifications to {', '.join(incident['owner'] for incident in active_incidents)}."
+                ),
+            )
 
         set_span_attributes(
             root_span,
@@ -321,6 +407,13 @@ def run_daily_orchestration() -> dict:
                 "orchestration.shipments_today": len(shipments),
                 "orchestration.open_incidents": len(active_incidents),
             },
+        )
+        set_span_io(
+            root_span,
+            output_value=(
+                f"{validation_status}: {len(shipments)} shipments, {len(inventory) or 100} map records, "
+                f"{len(active_incidents)} open incidents."
+            ),
         )
 
     agent_chain = [
