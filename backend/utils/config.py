@@ -20,3 +20,4 @@ USE_BIGQUERY_ANALYTICS = os.getenv("USE_BIGQUERY_ANALYTICS", "true").lower() == 
 
 ENABLE_ARIZE_AX = os.getenv("ENABLE_ARIZE_AX", "false").lower() == "true"
 ARIZE_PROJECT_NAME = os.getenv("ARIZE_PROJECT_NAME", "opspilot-ai")
+ARIZE_TRACE_HTTP_REQUESTS = os.getenv("ARIZE_TRACE_HTTP_REQUESTS", "false").lower() == "true"

@@ -1,6 +1,6 @@
 import os
 
-from utils.config import ARIZE_PROJECT_NAME, ENABLE_ARIZE_AX
+from utils.config import ARIZE_PROJECT_NAME, ARIZE_TRACE_HTTP_REQUESTS, ENABLE_ARIZE_AX
 
 _TRACER_PROVIDER = None
 
@@ -54,6 +54,9 @@ def setup_arize_ax():
 def instrument_fastapi(app):
     if not ENABLE_ARIZE_AX:
         return False
+    if not ARIZE_TRACE_HTTP_REQUESTS:
+        print("FastAPI request tracing disabled; exporting OpsPilot agent spans only.")
+        return False
 
     try:
         from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
@@ -66,6 +69,23 @@ def instrument_fastapi(app):
         return True
     except Exception as exc:
         print(f"FastAPI tracing skipped: {exc}")
+        return False
+
+
+def force_flush_traces(timeout_millis: int = 5000):
+    if not _TRACER_PROVIDER:
+        return False
+
+    force_flush = getattr(_TRACER_PROVIDER, "force_flush", None)
+    if not callable(force_flush):
+        return False
+
+    try:
+        return bool(force_flush(timeout_millis=timeout_millis))
+    except TypeError:
+        return bool(force_flush())
+    except Exception as exc:
+        print(f"Arize AX force flush skipped: {exc}")
         return False
 
 
