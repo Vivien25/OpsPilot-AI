@@ -4,7 +4,13 @@ AI-powered warehouse operations nerve center for shipment validation, inventory 
 
 OpsPilot AI combines Gemini Vision, multi-agent orchestration, BigQuery analytics, GCS reference retrieval, and Arize observability to help warehouse and manufacturing teams detect operational issues before they become expensive incidents.
 
-The repo also includes Vertex AI Agent Builder configuration assets and a stdio MCP server so OpsPilot can be exposed as agent-callable operational tools.
+This project is built for the **Arize Track** of the Google Cloud Rapid Agent Hackathon. The repo includes a deployed Vertex AI Agent Engine agent, Vertex AI Agent Builder configuration assets, Arize AX tracing, Arize MCP configuration, and a stdio MCP server so OpsPilot can be exposed as agent-callable operational tools.
+
+Deployed Agent Engine resource:
+
+```text
+projects/457509635383/locations/us-central1/reasoningEngines/7301050228281442304
+```
 
 ## Why OpsPilot AI?
 
@@ -145,8 +151,9 @@ OpsPilot AI is built on Google Cloud technologies:
 | FastAPI | Backend orchestration APIs |
 | React + Vite | Frontend dashboard |
 | Arize AX | AI observability and tracing |
-| Vertex AI Agent Builder | Agent configuration and OpenAPI tool connection |
-| MCP | Agent tool interoperability through a stdio MCP server |
+| Arize MCP | Partner MCP integration for tracing guidance and Arize AX docs access |
+| Vertex AI Agent Builder | Agent configuration, OpenAPI tool connection, and Agent Engine deployment |
+| MCP | Agent tool interoperability through Arize MCP and the OpsPilot stdio MCP server |
 
 ## Example Workflow
 
@@ -246,6 +253,7 @@ Arize captures:
 ```text
 OpsPilot-AI/
 ├── backend/
+│   ├── adk_agent/
 │   ├── agents/
 │   ├── api/
 │   ├── observability/
@@ -258,6 +266,7 @@ OpsPilot-AI/
 │   └── main.py
 ├── docs/
 │   ├── agent_builder/
+│   ├── arize_mcp/
 │   └── mcp/
 ├── frontend/
 │   ├── src/
@@ -310,14 +319,48 @@ The MCP server exposes:
 
 See [docs/mcp/README.md](docs/mcp/README.md).
 
+### Arize MCP Integration
+
+OpsPilot targets the Arize hackathon track and includes Arize MCP setup files in
+[docs/arize_mcp](docs/arize_mcp). The Arize MCP integration is used alongside
+Arize AX tracing so developers and judges can inspect instrumentation guidance,
+trace debugging context, and Arize AX documentation from an MCP-capable agent
+environment.
+
+### Vertex AI ADK Agent
+
+OpsPilot includes a Google ADK package in [backend/adk_agent](backend/adk_agent).
+It exposes the Cloud Run backend as ADK function tools for orchestration status,
+warehouse map retrieval, and product intake validation.
+
+```bash
+/usr/local/bin/python3.11 -m venv backend/adk_agent/.venv
+source backend/adk_agent/.venv/bin/activate
+python --version
+pip install -r backend/adk_agent/requirements.txt
+
+export OPSPILOT_API_BASE=https://opspilot-457509635383.us-central1.run.app
+adk run backend/adk_agent
+```
+
+Deploy to Vertex AI Agent Engine:
+
+```bash
+python -m backend.adk_agent.deploy_agent \
+  --project YOUR_PROJECT_ID \
+  --location us-central1 \
+  --staging-bucket gs://YOUR_AGENT_STAGING_BUCKET \
+  --api-base https://opspilot-457509635383.us-central1.run.app
+```
+
 ### Vertex AI Agent Builder
 
 Agent Builder configuration files are in [docs/agent_builder](docs/agent_builder):
 
 - `openapi.yaml` for deployed FastAPI tools
-- `agent_builder.yaml` for agent instructions and tool configuration notes
+- `agent_builder.yaml` for agent instructions, ADK package notes, and tool configuration notes
 
-Deploy the backend to Cloud Run, replace `https://YOUR_CLOUD_RUN_SERVICE_URL`, then add the OpenAPI tools in Vertex AI Agent Builder.
+Deploy the backend to Cloud Run, then add the OpenAPI tools or deploy the ADK package in Vertex AI Agent Builder.
 
 ## Environment Variables
 
@@ -368,7 +411,12 @@ Built for the Rapid Agent AI Hackathon using:
 - Google Gemini
 - Google Cloud
 - Arize AX
+- Arize MCP
 - FastAPI
 - React
 - BigQuery
 - GCS
+
+## License
+
+MIT License. See [LICENSE](LICENSE).

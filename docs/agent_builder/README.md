@@ -5,14 +5,14 @@ This folder contains the repo-side configuration for connecting OpsPilot AI to V
 ## What Is Included
 
 - `openapi.yaml`: OpenAPI tool schema for the deployed OpsPilot FastAPI backend.
-- `agent_builder.yaml`: Agent configuration notes, instructions, model choice, and tool list.
+- `agent_builder.yaml`: Agent configuration notes, ADK package pointer, instructions, model choice, and tool list.
 
 ## Setup Flow
 
 1. Deploy the backend to Cloud Run.
-2. Replace `https://YOUR_CLOUD_RUN_SERVICE_URL` in `openapi.yaml` and `agent_builder.yaml` with the Cloud Run URL.
+2. Confirm `openapi.yaml` and `agent_builder.yaml` point to `https://opspilot-457509635383.us-central1.run.app`.
 3. Open Vertex AI Agent Builder in Google Cloud.
-4. Create a new agent named `OpsPilot AI Warehouse Operations Agent`.
+4. Deploy the ADK package from `backend/adk_agent` or create a tool-connected agent named `OpsPilot AI Warehouse Operations Agent`.
 5. Use the instructions from `agent_builder.yaml`.
 6. Add tools from `openapi.yaml`.
 7. Test these prompts:

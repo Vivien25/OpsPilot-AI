@@ -4,7 +4,7 @@ info:
   version: 0.1.0
   description: OpenAPI tool schema for connecting Vertex AI Agent Builder to OpsPilot AI.
 servers:
-  - url: https://YOUR_CLOUD_RUN_SERVICE_URL
+  - url: https://opspilot-457509635383.us-central1.run.app
     description: Replace with the deployed OpsPilot FastAPI Cloud Run URL.
 paths:
   /health:

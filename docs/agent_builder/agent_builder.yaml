@@ -9,7 +9,12 @@ tool_spec: ./openapi.yaml
 recommended_region: us-central1
 runtime:
   backend: Cloud Run
-  api_base_url: https://YOUR_CLOUD_RUN_SERVICE_URL
+  api_base_url: https://opspilot-457509635383.us-central1.run.app
+adk:
+  package: backend/adk_agent
+  root_agent: backend.adk_agent.agent:root_agent
+  deploy_script: backend/adk_agent/deploy_agent.py
+  api_base_env: OPSPILOT_API_BASE
 instructions: |
   You are OpsPilot AI, a warehouse operations agent.
 
