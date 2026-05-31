@@ -54,6 +54,7 @@ FALLBACK_BOX_MASTER = {
 SIMULATED_PRODUCT_PHOTO = {
     "shipment_id": "SHIP-B-1500",
     "uploaded_at": "03:02 PM",
+    "image_gcs_uri": "gs://opspilotai-incident-images/daily-product-images/2026-05-30/20260530T200200Z-SHIP-B-1500-FG-220.jpg",
     "detected_item_id": "FG-220",
     "detected_label": "FG-220",
     "detected_package_type": "Finished Goods Carton",
@@ -188,6 +189,7 @@ def run_daily_orchestration() -> dict:
                     "shipment.arrival_time": intake_shipment.get("arrival_time") or "03:00 PM",
                     "image.uploaded": True,
                     "image.uploaded_at": product_photo["uploaded_at"],
+                    "image.gcs_uri": product_photo.get("image_gcs_uri"),
                     "vision.detected_item_id": product_photo["detected_item_id"],
                     "vision.detected_label": product_photo["detected_label"],
                     "vision.detected_package_type": product_photo["detected_package_type"],
@@ -496,6 +498,7 @@ def run_daily_orchestration() -> dict:
             "arrival_time": intake_shipment.get("arrival_time") or "03:00 PM",
             "uploaded_photo": True,
             "uploaded_at": product_photo["uploaded_at"],
+            "image_gcs_uri": product_photo.get("image_gcs_uri"),
             "detected_item_id": product_photo["detected_item_id"],
             "detected_label": product_photo["detected_label"],
             "detected_package_type": product_photo["detected_package_type"],

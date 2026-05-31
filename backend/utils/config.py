@@ -6,6 +6,7 @@ load_dotenv()
 
 GCP_PROJECT_ID = os.getenv("GCP_PROJECT_ID", "opspilotai")
 GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME", "opspilotai-incident-images")
+PRODUCT_IMAGE_GCS_BUCKET = os.getenv("PRODUCT_IMAGE_GCS_BUCKET", GCS_BUCKET_NAME)
 
 BIGQUERY_DATASET = os.getenv("BIGQUERY_DATASET", "opspilot_ai")
 BIGQUERY_ANALYSIS_RESULTS_TABLE = os.getenv("BIGQUERY_ANALYSIS_RESULTS_TABLE", "analysis_results")

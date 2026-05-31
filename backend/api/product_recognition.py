@@ -76,6 +76,13 @@ async def run_product_recognition_image(
     detected_package_size = vision.get("package_type") or vision.get("visual_description") or "Unknown package size"
     detected_condition = _condition_from_vision(vision.get("visual_description") or vision.get("vision_summary"))
     bq_reference = _fetch_bigquery_reference(detected_item_id)
+    image_gcs_uri = _store_daily_product_image(
+        image_bytes=image_bytes,
+        mime_type=mime_type,
+        shipment_id=shipment_id,
+        item_id=detected_item_id,
+        original_filename=image.filename,
+    )
     reference_comparison = _compare_with_gcs_reference(image_bytes, mime_type, bq_reference)
     shipment_context = _fetch_shipment_context(shipment_id)
 
@@ -93,6 +100,7 @@ async def run_product_recognition_image(
         image_result_override={
             "filename": image.filename,
             "mime_type": mime_type,
+            "image_gcs_uri": image_gcs_uri,
             "detected_label": request.detected_label,
             "detected_package_size": request.detected_package_size,
             "detected_condition": request.detected_condition,
@@ -259,6 +267,32 @@ def _fetch_shipment_context(shipment_id: str) -> dict | None:
         return None
 
     return fetch_shipment_status(shipment_id)
+
+
+def _store_daily_product_image(
+    image_bytes: bytes,
+    mime_type: str,
+    shipment_id: str,
+    item_id: str,
+    original_filename: str | None,
+) -> str | None:
+    try:
+        from services.storage.gcs_service import upload_daily_product_image
+    except Exception as exc:
+        print(f"Daily product image upload unavailable: {exc}")
+        return None
+
+    try:
+        return upload_daily_product_image(
+            image_bytes=image_bytes,
+            mime_type=mime_type,
+            shipment_id=shipment_id,
+            item_id=item_id,
+            original_filename=original_filename,
+        )
+    except Exception as exc:
+        print(f"Daily product image upload skipped: {exc}")
+        return None
 
 
 def _compare_with_gcs_reference(image_bytes: bytes, mime_type: str, reference: dict | None) -> dict:
