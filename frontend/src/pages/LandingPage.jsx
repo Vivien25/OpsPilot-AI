@@ -51,7 +51,7 @@ export default function LandingPage({ onNavigate = () => {} }) {
                 Product Recognition
               </button>
               <button className="text-btn" onClick={() => onNavigate("investigation")} type="button">
-                View Investigation
+                Incident Center
               </button>
             </div>
           </div>

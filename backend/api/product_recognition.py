@@ -3,7 +3,7 @@ import re
 from fastapi import APIRouter, File, Form, UploadFile
 from pydantic import BaseModel
 
-from observability.tracing import start_span
+from observability.tracing import set_span_io, start_span
 
 router = APIRouter()
 
@@ -131,7 +131,16 @@ def _evaluate_product_recognition(
             "input.modality": "image",
             "workflow": "product_recognition",
         },
-    ):
+        kind="AGENT",
+        input_value={
+            "item_id": request.item_id,
+            "shipment_id": request.shipment_id,
+            "detected_label": request.detected_label,
+            "detected_package_size": request.detected_package_size,
+            "detected_condition": request.detected_condition,
+            "detected_zone": request.detected_zone,
+        },
+    ) as recognition_span:
         image_result = image_result_override or {
             "detected_label": request.detected_label,
             "detected_package_size": request.detected_package_size,
@@ -140,13 +149,40 @@ def _evaluate_product_recognition(
             "confidence": 0.94,
         }
 
-        with start_span("item_master_rag_lookup", {"item_id": request.item_id, "retrieval.k": 1}):
+        with start_span(
+            "item_master_rag_lookup",
+            {"item_id": request.item_id, "retrieval.k": 1},
+            kind="RETRIEVER",
+            input_value={
+                "query_item_id": request.item_id,
+                "shipment_id": request.shipment_id,
+                "lookup": "item label, package size, product description, shipment info, expected zone",
+            },
+        ) as span:
             reference = reference_override or ITEM_MASTER.get(request.item_id) or _inferred_reference(request)
+            set_span_io(
+                span,
+                output_value={
+                    "item_id": reference["item_id"],
+                    "item_label": reference["item_label"],
+                    "expected_package_size": reference["expected_package_size"],
+                    "expected_zone": reference["expected_zone"],
+                    "responsible_contact": reference["responsible_contact"],
+                },
+            )
 
         checks = []
         exceptions = []
 
-        with start_span("package_validation_agent", {"expected_size": reference["expected_package_size"]}):
+        with start_span(
+            "package_validation_agent",
+            {"expected_size": reference["expected_package_size"]},
+            kind="AGENT",
+            input_value={
+                "detected_package_size": request.detected_package_size,
+                "expected_package_size": reference["expected_package_size"],
+            },
+        ) as span:
             package_ok = (
                 bool(reference_comparison.get("package_match"))
                 if reference_comparison and "package_match" in reference_comparison
@@ -155,8 +191,20 @@ def _evaluate_product_recognition(
             checks.append(_check("Package size", package_ok, request.detected_package_size, reference["expected_package_size"]))
             if not package_ok:
                 exceptions.append("Package size is unavailable or does not match item master.")
+            set_span_io(span, output_value={"package_ok": package_ok, "exception_count": len(exceptions)})
 
-        with start_span("label_validation_agent", {"expected_label": reference["item_label"]}):
+        with start_span(
+            "label_validation_agent",
+            {"expected_label": reference["item_label"]},
+            kind="AGENT",
+            input_value={
+                "detected_label": request.detected_label,
+                "expected_label": reference["item_label"],
+                "detected_zone": request.detected_zone,
+                "expected_zone": reference["expected_zone"],
+                "detected_condition": request.detected_condition,
+            },
+        ) as span:
             label_ok = (
                 bool(reference_comparison.get("label_match"))
                 if reference_comparison and "label_match" in reference_comparison
@@ -198,22 +246,43 @@ def _evaluate_product_recognition(
                 exceptions.append("Product condition requires inspection.")
             if not zone_ok:
                 exceptions.append("Detected zone does not match expected zone.")
+            set_span_io(
+                span,
+                output_value={
+                    "label_ok": label_ok,
+                    "zone_ok": zone_ok,
+                    "condition_ok": condition_ok,
+                    "exception_count": len(exceptions),
+                },
+            )
 
         approved = not exceptions
-        with start_span("intake_approval_agent", {"approved": approved, "exception_count": len(exceptions)}):
+        with start_span(
+            "intake_approval_agent",
+            {"approved": approved, "exception_count": len(exceptions)},
+            kind="AGENT",
+            input_value={"checks": checks, "exceptions": exceptions},
+        ) as span:
             decision = "Approve product intake" if approved else "Create intake exception"
+            set_span_io(span, output_value={"approved": approved, "decision": decision})
 
         incident = None
         if not approved:
-            with start_span("incident_agent", {"responsible_contact": reference["responsible_contact"]}):
+            with start_span(
+                "incident_agent",
+                {"responsible_contact": reference["responsible_contact"]},
+                kind="AGENT",
+                input_value={"exceptions": exceptions, "responsible_contact": reference["responsible_contact"]},
+            ) as span:
                 incident = {
                     "ticket_id": "INC-PROD-300PM-001",
                     "status": "open",
                     "assigned_to": reference["responsible_contact"],
                     "summary": exceptions[0],
                 }
+                set_span_io(span, output_value=incident)
 
-        return {
+        result = {
             "workflow": "POST /api/product-recognition",
             "decision": decision,
             "approved": approved,
@@ -231,6 +300,17 @@ def _evaluate_product_recognition(
                 "incident_agent",
             ],
         }
+        set_span_io(
+            recognition_span,
+            output_value={
+                "decision": decision,
+                "approved": approved,
+                "detected_item_id": image_result.get("item_id") or request.item_id,
+                "exception_count": len(exceptions),
+                "incident_created": bool(incident),
+            },
+        )
+        return result
 
 
 def _analyze_uploaded_image(image_bytes: bytes, mime_type: str) -> dict:

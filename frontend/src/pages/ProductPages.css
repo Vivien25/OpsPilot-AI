@@ -1796,11 +1796,11 @@ article.waiting .workflow-marker {
 
 .compact-trace div {
   display: grid;
-  grid-template-columns: 64px 24px minmax(0, 1fr);
-  gap: 10px;
-  align-items: center;
+  grid-template-columns: 72px minmax(112px, 0.32fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
   min-height: 34px;
-  padding: 7px 9px;
+  padding: 9px 10px;
   border-radius: 7px;
 }
 
@@ -1817,11 +1817,14 @@ article.waiting .workflow-marker {
 }
 
 .compact-trace span {
+  overflow-wrap: anywhere;
+  line-height: 1.15;
   font-weight: 950;
 }
 
 .compact-trace p {
   color: var(--text);
+  line-height: 1.35;
 }
 
 .ticket-empty-state {
@@ -1842,6 +1845,210 @@ article.waiting .workflow-marker {
   line-height: 1.4;
 }
 
+.incident-command-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.7fr);
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.incident-priority-card {
+  border-color: #b7eadf;
+}
+
+.incident-priority-card.urgent {
+  border-color: #f4b4aa;
+  background: linear-gradient(135deg, #fff7f5, #ffffff 68%);
+}
+
+.incident-priority-card.clear {
+  background: linear-gradient(135deg, #f4fffb, #ffffff 68%);
+}
+
+.priority-issue {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.priority-issue strong {
+  color: var(--text);
+  font-size: clamp(22px, 2vw, 32px);
+  line-height: 1.1;
+}
+
+.priority-issue p {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.ticket-state {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.ticket-state.pending {
+  background: #fff3cd;
+  color: #9a6500;
+}
+
+.ticket-state.fixed {
+  background: #e5f8ef;
+  color: var(--green);
+}
+
+.ticket-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.ticket-meta-grid div {
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.ticket-meta-grid span,
+.ticket-field span,
+.evidence-list span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.ticket-meta-grid strong {
+  display: block;
+  margin-top: 5px;
+  overflow-wrap: anywhere;
+  color: var(--text);
+}
+
+.resolution-bars {
+  display: grid;
+  gap: 16px;
+}
+
+.resolution-bars div {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr) 36px;
+  gap: 10px;
+  align-items: center;
+}
+
+.resolution-bars span,
+.resolution-bars strong {
+  color: var(--text);
+  font-weight: 900;
+}
+
+.resolution-bars b {
+  display: block;
+  height: 12px;
+  border-radius: 999px;
+  background: #facc15;
+}
+
+.resolution-bars b.fixed {
+  background: var(--green);
+}
+
+.resolution-bars b.urgent {
+  background: var(--red);
+}
+
+.incident-ticket-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px 14px;
+}
+
+.incident-ticket-card {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.incident-ticket-card.pending {
+  border-color: #f6d58b;
+  background: #fffaf0;
+}
+
+.incident-ticket-card.fixed {
+  border-color: #b7eadf;
+  background: #f7fffb;
+}
+
+.ticket-card-topline {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ticket-card-topline strong,
+.incident-ticket-card h3 {
+  color: var(--text);
+}
+
+.incident-ticket-card h3 {
+  margin: 0;
+  font-size: 21px;
+  line-height: 1.18;
+}
+
+.ticket-field {
+  display: grid;
+  gap: 5px;
+}
+
+.ticket-field p {
+  color: var(--text);
+  line-height: 1.45;
+}
+
+.compact-investigation-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  margin-top: 22px;
+}
+
+.evidence-list {
+  display: grid;
+  gap: 10px;
+}
+
+.evidence-list div {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.evidence-list strong {
+  overflow-wrap: anywhere;
+  color: var(--text);
+  line-height: 1.35;
+}
+
 .evidence-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1858,8 +2065,11 @@ article.waiting .workflow-marker {
   .landing-hero-grid,
   .landing-intel,
   .dashboard-intelligence-grid,
+  .incident-command-grid,
+  .incident-ticket-grid,
   .investigation-forensics-grid,
   .orchestration-grid,
+  .compact-investigation-grid,
   .evidence-grid {
     grid-template-columns: 1fr;
   }

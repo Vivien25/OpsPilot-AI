@@ -7,6 +7,21 @@ load_dotenv()
 GCP_PROJECT_ID = os.getenv("GCP_PROJECT_ID", "opspilotai")
 GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME", "opspilotai-incident-images")
 PRODUCT_IMAGE_GCS_BUCKET = os.getenv("PRODUCT_IMAGE_GCS_BUCKET", GCS_BUCKET_NAME)
+CORS_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ORIGINS",
+        ",".join(
+            [
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
+                "https://opspilot-web-jadyxrkxkq-uc.a.run.app",
+                "https://opspilot-web-457509635383.us-central1.run.app",
+            ]
+        ),
+    ).split(",")
+    if origin.strip()
+]
 
 BIGQUERY_DATASET = os.getenv("BIGQUERY_DATASET", "opspilot_ai")
 BIGQUERY_ANALYSIS_RESULTS_TABLE = os.getenv("BIGQUERY_ANALYSIS_RESULTS_TABLE", "analysis_results")

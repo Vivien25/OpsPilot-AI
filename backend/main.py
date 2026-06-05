@@ -6,6 +6,7 @@ from api.orchestration import router as orchestration_router
 from api.product_recognition import router as product_recognition_router
 from api.warehouse_map import router as warehouse_map_router
 from observability.arize_ax_setup import instrument_fastapi, setup_arize_ax
+from utils.config import CORS_ORIGINS
 
 setup_arize_ax()
 app = FastAPI(title="OpsPilot AI")
@@ -13,7 +14,7 @@ instrument_fastapi(app)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

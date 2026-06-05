@@ -1,3 +1,4 @@
+import json
 from contextlib import contextmanager
 
 
@@ -31,8 +32,12 @@ def start_span(
             if attributes:
                 set_span_attributes(span, attributes)
             yield span
+            span.set_attribute("status", "success")
+            span.set_attribute("status_code", "OK")
             span.set_status(Status(StatusCode.OK))
         except Exception as exc:
+            span.set_attribute("status", "error")
+            span.set_attribute("status_code", "ERROR")
             span.record_exception(exc)
             span.set_status(Status(StatusCode.ERROR, str(exc)))
             raise
@@ -49,9 +54,11 @@ def set_span_io(
     if kind:
         attributes["openinference.span.kind"] = kind.upper()
     if input_value is not None:
-        attributes["input.value"] = input_value
+        attributes["input.value"] = _format_io_value(input_value)
+        attributes["input.mime_type"] = _mime_type(input_value)
     if output_value is not None:
-        attributes["output.value"] = output_value
+        attributes["output.value"] = _format_io_value(output_value)
+        attributes["output.mime_type"] = _mime_type(output_value)
     set_span_attributes(span, attributes)
 
 
@@ -79,3 +86,15 @@ class _NoopSpan:
 
     def record_exception(self, *_args, **_kwargs):
         return None
+
+
+def _format_io_value(value):
+    if isinstance(value, (dict, list, tuple)):
+        return json.dumps(value, default=str)
+    return str(value)
+
+
+def _mime_type(value):
+    if isinstance(value, (dict, list, tuple)):
+        return "application/json"
+    return "text/plain"
